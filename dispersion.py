@@ -131,39 +131,46 @@ def run():
 
         date = startdate
 
-        name = date.isoformat()[0:13] 
+        # # If the particle trajectories have not been run, run them
+        # if not os.path.exists('tracks/' + name + '.nc'):
 
-        # If the particle trajectories have not been run, run them
-        if not os.path.exists('tracks/' + name + '.nc'):
+        # Read in simulation initialization
+        nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
+                grid, dostream, N, T0, U, V = init.disp(date, loc, grid=grid)
 
-            # Read in simulation initialization
-            nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
-                    grid, dostream, N, T0, U, V = init.disp(date, loc, grid=grid)
+        mod = 'doturb' + str(doturb) + '_ah' + str(ah) + '/'
 
-            # Run tracpy
-            lonp, latp, zp, t, grid \
-                = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
-                                    lon0, lat0, z0, zpar, do3d, doturb, name, \
-                                    grid=grid, dostream=dostream)
-            # lonp, latp, zp, t, grid, T0, U, V \
-            #     = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
-            #                         lon0, lat0, z0, zpar, do3d, doturb, name, \
-            #                         grid=grid, dostream=dostream, T0=T0, U=U, V=V)
+        if not os.path.exists('tracks/mod'):
+            os.makedirs('tracks/mod')
+        if not os.path.exists('figures/mod'):
+            os.makedirs('figures/mod')
 
-        # # If basic figures don't exist, make them
-        # if not os.path.exists('figures/' + name + '*.png'):
+        name =  mod + date.isoformat()[0:13] 
 
-            # Read in and plot tracks
-            d = netCDF.Dataset('tracks/' + name + '.nc')
-            lonp = d.variables['lonp'][:]
-            latp = d.variables['latp'][:]
-            tracpy.plotting.tracks(lonp, latp, name, grid=grid)
-            # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
-            d.close()
-            # # Do transport plot
-            # tracpy.plotting.transport(name='', fmod=date.isoformat()[0:13], 
-            #     extraname=date.isoformat()[0:13], 
-            #     Title='Transport on Shelf, for a week from ' + date.isoformat()[0:13], dmax=1.0)
+        # Run tracpy
+        lonp, latp, zp, t, grid \
+            = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
+                                lon0, lat0, z0, zpar, do3d, doturb, name, \
+                                grid=grid, dostream=dostream)
+        # lonp, latp, zp, t, grid, T0, U, V \
+        #     = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
+        #                         lon0, lat0, z0, zpar, do3d, doturb, name, \
+        #                         grid=grid, dostream=dostream, T0=T0, U=U, V=V)
+
+    # # If basic figures don't exist, make them
+    # if not os.path.exists('figures/' + name + '*.png'):
+
+        # Read in and plot tracks
+        d = netCDF.Dataset('tracks/' + name + '.nc')
+        lonp = d.variables['lonp'][:]
+        latp = d.variables['latp'][:]
+        tracpy.plotting.tracks(lonp, latp, name, grid=grid)
+        # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
+        d.close()
+        # # Do transport plot
+        # tracpy.plotting.transport(name='', fmod=date.isoformat()[0:13], 
+        #     extraname=date.isoformat()[0:13], 
+        #     Title='Transport on Shelf, for a week from ' + date.isoformat()[0:13], dmax=1.0)
 
    
         # # Do transport plot

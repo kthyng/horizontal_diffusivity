@@ -158,5 +158,7 @@ def disp(date, loc, grid=None):
     U = np.ma.zeros(grid['xu'].shape,order='F')
     V = np.ma.zeros(grid['xv'].shape,order='F')
 
+    # name = date.isoformat()[0:13] + '_doturb' + str(doturb) + '_ah' + str(int(ah)) 
+
     return nsteps, ndays, ff, tseas, ah, av, lon0, lat0, \
             z0, zpar, do3d, doturb, grid, dostream, N, T0.data, U, V

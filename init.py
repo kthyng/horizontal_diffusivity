@@ -77,12 +77,12 @@ def disp(date, loc, grid=None):
 
     # Initialize parameters
     nsteps = 5 # 5 time interpolation steps
-    ndays = 25
+    ndays = 50
     ff = 1 # This is a forward-moving simulation
 
     # Time between outputs
     tseas = 4*3600 # 4 hours between outputs, in seconds, time between model outputs 
-    ah = 5.
+    ah = 0.
     av = 0. # m^2/s
 
     if grid is None:
@@ -95,7 +95,8 @@ def disp(date, loc, grid=None):
     # Initial lon/lat locations for drifters
     # Start uniform array of drifters across domain using x,y coords
     # llcrnrlon = -92.25; urcrnrlon = -91.75; llcrnrlat = 29; urcrnrlat = 29.3; #C
-    llcrnrlon = -97; urcrnrlon = -96.5; llcrnrlat = 27; urcrnrlat = 27.5; #B
+    # llcrnrlon = -97; urcrnrlon = -96.5; llcrnrlat = 27; urcrnrlat = 27.5; #B
+    llcrnrlon = -93.8; urcrnrlon = -92.2; llcrnrlat = 28; urcrnrlat = 29.2; # New
     xcrnrs, ycrnrs = grid['basemap']([llcrnrlon, urcrnrlon], [llcrnrlat, urcrnrlat])
     X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], 700), 
                         np.arange(ycrnrs[0], ycrnrs[1], 700))
@@ -130,7 +131,7 @@ def disp(date, loc, grid=None):
 
     # for 3d flag, do3d=0 makes the run 2d and do3d=1 makes the run 3d
     do3d = 0
-    doturb = 3
+    doturb = 0
 
     # Flag for streamlines. All the extra steps right after this are for streamlines.
     dostream = 0

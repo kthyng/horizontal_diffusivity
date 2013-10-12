@@ -45,7 +45,11 @@ def get_dist(lon1,lons,lat1,lats):
                                        * np.sin(0.50*(lon1-lons))**2))
     return distance
 
-def calc_dispersion(name, grid=None):
+def calc_dispersion(name, grid=None, which='relative'):
+    '''
+    Default is to look at relative dispersion (which='relative'), but
+    also can do lagrangian dispersion, comparing with the mean (which='lagrangian').
+    '''
 
     if grid is None:
         loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'

@@ -88,8 +88,12 @@ def calc_dispersion(name, grid=None, which='relative'):
     D2 = np.ones(lonp.shape[1])*np.nan
     nnans = np.zeros(lonp.shape[1]) # to collect number of non-nans over all drifters for a time
     for ipair in xrange(len(pairs)):
-        dist = get_dist(lonp[pairs[ipair][0],:], lonp[pairs[ipair][1],:], 
-                    latp[pairs[ipair][0],:], latp[pairs[ipair][1],:])
+        if which == 'relative':
+            dist = get_dist(lonp[pairs[ipair][0],:], lonp[pairs[ipair][1],:], 
+                        latp[pairs[ipair][0],:], latp[pairs[ipair][1],:])
+        elif which == 'lagrangian':
+            dist = get_dist(lonp[pairs[ipair][0],:], lonp[pairs[ipair][1],:], 
+                        latp[pairs[ipair][0],:], latp[pairs[ipair][1],:])
         D2 = np.nansum(np.vstack([D2, dist**2]), axis=0)
         nnans = nnans + ~np.isnan(dist)
     D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
@@ -109,59 +113,58 @@ def run():
 
     grid = tracpy.inout.readgrid(loc)
 
-    # startdates = np.array([datetime(2006, 7, 1, 0, 1)])
-    startdates = np.array([datetime(2006, 2, 1, 0, 1)])#, datetime(2006, 7, 1, 0, 1)])
-    # pdb.set_trace()
+    # Weekly Oct, Nov, Dec; biweekly Jan, Feb, Mar; monthly Apr, May, Jun, Jul
+    startdates = np.array([datetime(2009, 10, 1, 0, 1), datetime(2009, 10, 8, 0, 1),
+                            datetime(2009, 10, 15, 0, 1), datetime(2009, 10, 22, 0, 1),
+                            datetime(2009, 11, 1, 0, 1), datetime(2009, 11, 8, 0, 1),
+                            datetime(2009, 11, 15, 0, 1), datetime(2009, 11, 22, 0, 1),
+                            datetime(2009, 12, 1, 0, 1), datetime(2009, 12, 8, 0, 1),
+                            datetime(2009, 12, 15, 0, 1), datetime(2009, 12, 22, 0, 1),
+                            datetime(2010, 1, 1, 0, 1), datetime(2010, 1, 15, 0, 1),
+                            datetime(2010, 2, 1, 0, 1), datetime(2010, 2, 15, 0, 1),
+                            datetime(2010, 3, 1, 0, 1), datetime(2010, 3, 15, 0, 1),
+                            datetime(2010, 4, 1, 0, 1), datetime(2010, 5, 1, 0, 1),
+                            datetime(2010, 6, 1, 0, 1), datetime(2010, 7, 1, 0, 1)])
 
     # loop through state dates
     for startdate in startdates:
 
         date = startdate
 
-        # initialize counter for number of hours to increment through simulation by
-        nh = 0
+        name = date.isoformat()[0:13] 
 
-        # Start from the beginning and add days on for loop
-        # keep running until we hit the next month
-        while date.day < startdate.day+1:
+        # If the particle trajectories have not been run, run them
+        if not os.path.exists('tracks/' + name + '.nc'):
 
-            name = date.isoformat()[0:13] 
+            # Read in simulation initialization
+            nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
+                    grid, dostream, N, T0, U, V = init.disp(date, loc, grid=grid)
 
-            # If the particle trajectories have not been run, run them
-            if not os.path.exists('tracks/' + name + '.nc'):
+            # Run tracpy
+            lonp, latp, zp, t, grid \
+                = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
+                                    lon0, lat0, z0, zpar, do3d, doturb, name, \
+                                    grid=grid, dostream=dostream)
+            # lonp, latp, zp, t, grid, T0, U, V \
+            #     = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
+            #                         lon0, lat0, z0, zpar, do3d, doturb, name, \
+            #                         grid=grid, dostream=dostream, T0=T0, U=U, V=V)
 
-                # Read in simulation initialization
-                nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
-                        grid, dostream, N, T0, U, V = init.disp(date, loc, grid=grid)
+        # # If basic figures don't exist, make them
+        # if not os.path.exists('figures/' + name + '*.png'):
 
-                # Run tracpy
-                lonp, latp, zp, t, grid \
-                    = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
-                                        lon0, lat0, z0, zpar, do3d, doturb, name, \
-                                        grid=grid, dostream=dostream)
-                # lonp, latp, zp, t, grid, T0, U, V \
-                #     = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
-                #                         lon0, lat0, z0, zpar, do3d, doturb, name, \
-                #                         grid=grid, dostream=dostream, T0=T0, U=U, V=V)
+            # Read in and plot tracks
+            d = netCDF.Dataset('tracks/' + name + '.nc')
+            lonp = d.variables['lonp'][:]
+            latp = d.variables['latp'][:]
+            tracpy.plotting.tracks(lonp, latp, name, grid=grid)
+            # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
+            d.close()
+            # # Do transport plot
+            # tracpy.plotting.transport(name='', fmod=date.isoformat()[0:13], 
+            #     extraname=date.isoformat()[0:13], 
+            #     Title='Transport on Shelf, for a week from ' + date.isoformat()[0:13], dmax=1.0)
 
-            # # If basic figures don't exist, make them
-            # if not os.path.exists('figures/' + name + '*.png'):
-
-                # Read in and plot tracks
-                d = netCDF.Dataset('tracks/' + name + '.nc')
-                lonp = d.variables['lonp'][:]
-                latp = d.variables['latp'][:]
-                tracpy.plotting.tracks(lonp, latp, name, grid=grid)
-                # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
-                d.close()
-                # # Do transport plot
-                # tracpy.plotting.transport(name='', fmod=date.isoformat()[0:13], 
-                #     extraname=date.isoformat()[0:13], 
-                #     Title='Transport on Shelf, for a week from ' + date.isoformat()[0:13], dmax=1.0)
-
-            # Increment by 24 hours for next loop, to move through more quickly
-            nh = nh + 24
-            date = startdate + timedelta(hours=nh)
    
         # # Do transport plot
         # tracpy.plotting.transport(name='', fmod=startdate.isoformat()[0:7] + '*', 

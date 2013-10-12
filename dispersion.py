@@ -135,7 +135,7 @@ def run():
         nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
                 grid, dostream, N, T0, U, V = init.disp(date, loc, grid=grid)
 
-        mod = 'doturb' + str(doturb) + '_ah' + str(ah) + '/'
+        mod = 'doturb' + str(doturb) + '_ah' + str(int(ah)) + '/'
 
         if not os.path.exists('tracks/' + mod):
             os.makedirs('tracks/' + mod)

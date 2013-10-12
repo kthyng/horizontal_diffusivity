@@ -121,14 +121,15 @@ def run_dispersion():
     for test in tests: # loop through types of simulations
         runs = glob.glob(test + '/*')
         Dname = os.path.join(test, 'D2.npz')
-        D2 = []; nnans_temp = 0;
+        D2 = []; nnans = 0;
         for run in runs: # loop through all the runs of that type
             if not os.path.exists(Dname):
                 D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)
                 D2.append(D2_temp)
-                pdb.set_trace()
                 # D2 = np.nansum(np.vstack([D2, D2_temp]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
-                nnans = nnans + nnans_temp
+                # nnans = nnans + nnans_temp
+                nnans.append(nnans_temp)
+                pdb.set_trace()
         # After I have run through all the times for this type of run, do average and save
         D2 = D2.squeeze()/nnans
         np.savez(Dname, D2=D2, t=t)

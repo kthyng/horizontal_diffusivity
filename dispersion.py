@@ -119,7 +119,7 @@ def run_dispersion():
         D2 = 0; nnans_temp = 0;
         for run in runs: # loop through all the runs of that type
             if not os.path.exists(Dname):
-                D2_temp, t_temp, nnans_temp = dispersion.calc_dispersion(run, grid)
+                D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)
                 D2 = np.nansum(np.vstack([D2, D2_temp**2]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
                 nnans = nnans + nnans_temp
         # After I have run through all the times for this type of run, do average and save

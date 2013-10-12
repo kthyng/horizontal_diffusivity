@@ -94,11 +94,39 @@ def calc_dispersion(name, grid=None, which='relative'):
         elif which == 'lagrangian':
             dist = get_dist(lonp[pairs[ipair][0],:], lonp[pairs[ipair][1],:], 
                         latp[pairs[ipair][0],:], latp[pairs[ipair][1],:])
-        D2 = np.nansum(np.vstack([D2, dist**2]), axis=0)
+        # D2 = np.nansum(np.vstack([D2, dist**2]), axis=0)
         nnans = nnans + ~np.isnan(dist)
-    D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
+    # D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
 
-    return D2, t
+    # Distances squared, separately; times; number of non-nans for this set
+    return D2, t, nnans
+    # return D2, t
+
+def run_dispersion():
+    '''
+    Run code to save dispersion calculations.
+    '''
+
+    # # Make sure necessary directories exist
+    # if not os.path.exists('calcs'):
+    #     os.makedirs('calcs')
+
+    tests = glob.glob('tracks/*') # types of simulations
+
+    for test in tests: # loop through types of simulations
+        runs = glob.glob(test + '/*')
+        Dname = os.path.join(test, 'D2.npz')
+        D2 = 0; nnans_temp = 0;
+        for run in runs: # loop through all the runs of that type
+            if not os.path.exists(Dname):
+                D2_temp, t_temp, nnans_temp = dispersion.calc_dispersion(run, grid)
+                D2 = np.nansum(np.vstack([D2, D2_temp**2]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
+                nnans = nnans + nnans_temp
+        # After I have run through all the times for this type of run, do average and save
+        D2 = D2.squeeze()/nnans
+        np.savez(Dname, D2=D2, t=t)
+
+
 
 def run():
 

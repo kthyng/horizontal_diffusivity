@@ -111,6 +111,11 @@ def run_dispersion():
     # if not os.path.exists('calcs'):
     #     os.makedirs('calcs')
 
+    # Location of TXLA model output
+    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+
+    grid = tracpy.inout.readgrid(loc)
+
     tests = glob.glob('tracks/*') # types of simulations
 
     for test in tests: # loop through types of simulations

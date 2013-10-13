@@ -140,6 +140,7 @@ def run_dispersion():
                 # D2 = np.nansum(np.vstack([D2, D2_temp]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
                 # nnans = nnans + nnans_temp
                 nnans.append(nnans_temp)
+                d.close()
                 # pdb.set_trace()
 
         # After I have run through all the times for this type of run, do average and save

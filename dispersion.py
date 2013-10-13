@@ -134,7 +134,7 @@ def run_dispersion():
                 D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)
             else:
                 d = np.load(D2name)
-                D2_temp = d['D2']; t_temp = d['t']; nnans_temp = d['nnans_temp'];
+                D2_temp = d['D2']; t_temp = d['t']; nnans_temp = d['nnans'];
                 D2.append(D2_temp)
                 # D2 = np.nansum(np.vstack([D2, D2_temp]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
                 # nnans = nnans + nnans_temp

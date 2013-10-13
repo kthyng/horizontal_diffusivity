@@ -73,17 +73,22 @@ def calc_dispersion(name, grid=None, which='relative'):
     # let the index in axis 0 be the drifter id
     ID = np.arange(lonp.shape[0])
 
-    pairs = []
-    for idrifter in xrange(lonp.shape[0]):
-        ind = find(dist[idrifter,:]<=1)
-        for i in ind:
-            if ID[idrifter] != ID[i]:
-                pairs.append([min(ID[idrifter], ID[i]), 
-                                max(ID[idrifter], ID[i])])
+    # save pairs to save time since they are always the same
+    if not os.path.exists('tracks/pairs.npz'):
+        pairs = []
+        for idrifter in xrange(lonp.shape[0]):
+            ind = find(dist[idrifter,:]<=1)
+            for i in ind:
+                if ID[idrifter] != ID[i]:
+                    pairs.append([min(ID[idrifter], ID[i]), 
+                                    max(ID[idrifter], ID[i])])
 
-    pairs_set = set(map(tuple,pairs))
-    pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
-    pairs.sort() #unnecessary but handy for checking work
+        pairs_set = set(map(tuple,pairs))
+        pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
+        pairs.sort() #unnecessary but handy for checking work
+        np.savez('tracks/pairs.npz', pairs=pairs)
+    else:
+        pairs = np.load('tracks/pairs.npz')['pairs']
 
     D2 = np.ones(lonp.shape[1])*np.nan
     nnans = np.zeros(lonp.shape[1]) # to collect number of non-nans over all drifters for a time
@@ -99,6 +104,7 @@ def calc_dispersion(name, grid=None, which='relative'):
     # D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
 
     # Distances squared, separately; times; number of non-nans for this set
+    np.savez(name[:-3] + 'D2.npz', D2=D2, t=t, nnans=nnans)
     return D2, t, nnans
     # return D2, t
 
@@ -120,16 +126,21 @@ def run_dispersion():
 
     for test in tests: # loop through types of simulations
         runs = glob.glob(test + '/*')
-        Dname = os.path.join(test, 'D2.npz')
+        Dnameoverall = os.path.join(test, 'D2overall.npz')
         D2 = []; nnans = [];
         for run in runs: # loop through all the runs of that type
             if not os.path.exists(Dname):
-                D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)
-                D2.append(D2_temp)
-                # D2 = np.nansum(np.vstack([D2, D2_temp]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
-                # nnans = nnans + nnans_temp
-                nnans.append(nnans_temp)
-                # pdb.set_trace()
+                D2name = run[:-3] + 'D2.npz'
+                if not os.path.exists(D2name):
+                    D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)
+                else:
+                    d = np.load(D2name)
+                    D2_temp = d['D2']; t_temp = d['t']; nnans_temp = d['nnans_temp'];
+                    D2.append(D2_temp)
+                    # D2 = np.nansum(np.vstack([D2, D2_temp]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
+                    # nnans = nnans + nnans_temp
+                    nnans.append(nnans_temp)
+                    # pdb.set_trace()
         # After I have run through all the times for this type of run, do average and save
         D2 = D2.squeeze()/nnans
         np.savez(Dname, D2=D2, t=t)

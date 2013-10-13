@@ -125,7 +125,7 @@ def run_dispersion():
     tests = glob.glob('tracks/*') # types of simulations
 
     for test in tests: # loop through types of simulations
-        runs = glob.glob(test + '/*')
+        runs = glob.glob(test + '/*.nc')
         Dnameoverall = os.path.join(test, 'D2overall.npz')
         D2 = []; nnans = [];
         for run in runs: # loop through all the runs of that type

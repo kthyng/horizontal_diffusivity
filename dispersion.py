@@ -121,7 +121,7 @@ def run_dispersion():
     for test in tests: # loop through types of simulations
         runs = glob.glob(test + '/*')
         Dname = os.path.join(test, 'D2.npz')
-        D2 = []; nnans = 0;
+        D2 = []; nnans = [];
         for run in runs: # loop through all the runs of that type
             if not os.path.exists(Dname):
                 D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)

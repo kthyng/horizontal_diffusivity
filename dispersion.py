@@ -129,8 +129,8 @@ def run_dispersion():
         Dnameoverall = os.path.join(test, 'D2overall.npz')
         D2 = []; nnans = [];
         for run in runs: # loop through all the runs of that type
+            D2name = run[:-3] + 'D2.npz'
             if not os.path.exists(Dname):
-                D2name = run[:-3] + 'D2.npz'
                 if not os.path.exists(D2name):
                     D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)
                 else:

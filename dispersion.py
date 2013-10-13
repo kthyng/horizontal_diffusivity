@@ -130,20 +130,19 @@ def run_dispersion():
         D2 = []; nnans = [];
         for run in runs: # loop through all the runs of that type
             D2name = run[:-3] + 'D2.npz'
-            if not os.path.exists(Dname):
-                if not os.path.exists(D2name):
-                    D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)
-                else:
-                    d = np.load(D2name)
-                    D2_temp = d['D2']; t_temp = d['t']; nnans_temp = d['nnans_temp'];
-                    D2.append(D2_temp)
-                    # D2 = np.nansum(np.vstack([D2, D2_temp]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
-                    # nnans = nnans + nnans_temp
-                    nnans.append(nnans_temp)
-                    # pdb.set_trace()
+            if not os.path.exists(D2name):
+                D2_temp, t_temp, nnans_temp = calc_dispersion(run, grid)
+            else:
+                d = np.load(D2name)
+                D2_temp = d['D2']; t_temp = d['t']; nnans_temp = d['nnans_temp'];
+                D2.append(D2_temp)
+                # D2 = np.nansum(np.vstack([D2, D2_temp]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
+                # nnans = nnans + nnans_temp
+                nnans.append(nnans_temp)
+                # pdb.set_trace()
         # After I have run through all the times for this type of run, do average and save
         D2 = D2.squeeze()/nnans
-        np.savez(Dname, D2=D2, t=t)
+        np.savez(Dnameoverall, D2=D2, t=t)
 
 
 

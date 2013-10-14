@@ -135,30 +135,30 @@ def disp(date, loc, grid=None):
 
     # Flag for streamlines. All the extra steps right after this are for streamlines.
     dostream = 0
-    # convert date to number
-    datenum = netCDF.date2num(date, units)
-    # Number of model outputs to use
-    tout = np.int((ndays*(24*3600))/tseas)
-    # Figure out what files will be used for this tracking - to get tinds for
-    # the following calculation
-    nc, tinds = tracpy.inout.setupROMSfiles(loc, datenum, ff, tout)
-    # Get fluxes at first time step in order to find initial drifter volume transport
-    uf, vf, dzt, zrt, zwt  = tracpy.inout.readfields(tinds[0],grid,nc,z0,zpar)
-    nc.close()
-    # Initial total volume transport as a scalar quantity to be conserved, I think
-    T0 = (abs(uf[ia, ja, 0]) + abs(vf[ia, ja, 0]))/N
-    # # Initialize arrays of lon0, lat0 and U, V for full number of drifters
-    # lon0 = np.ones(N,order='F')*lon0
-    # lat0 = np.ones(N,order='F')*lat0
-    # T0 = np.ones(N,order='F')*T0
+    # # convert date to number
+    # datenum = netCDF.date2num(date, units)
+    # # Number of model outputs to use
+    # tout = np.int((ndays*(24*3600))/tseas)
+    # # Figure out what files will be used for this tracking - to get tinds for
+    # # the following calculation
+    # nc, tinds = tracpy.inout.setupROMSfiles(loc, datenum, ff, tout)
+    # # Get fluxes at first time step in order to find initial drifter volume transport
+    # uf, vf, dzt, zrt, zwt  = tracpy.inout.readfields(tinds[0],grid,nc,z0,zpar)
+    # nc.close()
+    # # Initial total volume transport as a scalar quantity to be conserved, I think
+    # T0 = (abs(uf[ia, ja, 0]) + abs(vf[ia, ja, 0]))/N
+    # # # Initialize arrays of lon0, lat0 and U, V for full number of drifters
+    # # lon0 = np.ones(N,order='F')*lon0
+    # # lat0 = np.ones(N,order='F')*lat0
+    # # T0 = np.ones(N,order='F')*T0
 
-    # Initialize the arrays to save the transports on the grid in the loop.
-    # These arrays aggregate volume transport when a drifter enters or exits a grid cell
-    # These should start at zero since we don't know which way things will travel yet
-    U = np.ma.zeros(grid['xu'].shape,order='F')
-    V = np.ma.zeros(grid['xv'].shape,order='F')
+    # # Initialize the arrays to save the transports on the grid in the loop.
+    # # These arrays aggregate volume transport when a drifter enters or exits a grid cell
+    # # These should start at zero since we don't know which way things will travel yet
+    # U = np.ma.zeros(grid['xu'].shape,order='F')
+    # V = np.ma.zeros(grid['xv'].shape,order='F')
 
     # name = date.isoformat()[0:13] + '_doturb' + str(doturb) + '_ah' + str(int(ah)) 
 
     return nsteps, ndays, ff, tseas, ah, av, lon0, lat0, \
-            z0, zpar, do3d, doturb, grid, dostream, N, T0.data, U, V
+            z0, zpar, do3d, doturb, grid, dostream #, N, T0.data, U, V

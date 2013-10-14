@@ -186,7 +186,9 @@ def run():
 
         # Read in simulation initialization
         nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
-                grid, dostream, N, T0, U, V = init.disp(date, loc, grid=grid)
+                grid, dostream = init.disp(date, loc, grid=grid)
+        # nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
+        #         grid, dostream, N, T0, U, V = init.disp(date, loc, grid=grid)
 
         mod = 'doturb' + str(doturb) + '_ah' + str(int(ah)) + '/'
 

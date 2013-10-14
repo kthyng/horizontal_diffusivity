@@ -122,7 +122,7 @@ def run_dispersion():
 
     grid = tracpy.inout.readgrid(loc)
 
-    tests = glob.glob('tracks/*') # types of simulations
+    tests = glob.glob('tracks/do*') # types of simulations
 
     for test in tests: # loop through types of simulations
         runs = glob.glob(test + '/*.nc')

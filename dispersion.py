@@ -45,10 +45,11 @@ def get_dist(lon1,lons,lat1,lats):
                                        * np.sin(0.50*(lon1-lons))**2))
     return distance
 
-def calc_dispersion(name, grid=None, which='relative'):
+def calc_dispersion(name, grid=None, which='relative', r=1):
     '''
     Default is to look at relative dispersion (which='relative'), but
     also can do lagrangian dispersion, comparing with the mean (which='lagrangian').
+    r is the radius for initial separation distance in km
     '''
 
     if grid is None:
@@ -77,7 +78,7 @@ def calc_dispersion(name, grid=None, which='relative'):
     if not os.path.exists('tracks/pairs.npz'):
         pairs = []
         for idrifter in xrange(lonp.shape[0]):
-            ind = find(dist[idrifter,:]<=1)
+            ind = find(dist[idrifter,:]<=r)
             for i in ind:
                 if ID[idrifter] != ID[i]:
                     pairs.append([min(ID[idrifter], ID[i]), 
@@ -136,12 +137,10 @@ def run_dispersion():
             else:
                 d = np.load(D2name)
                 D2_temp = d['D2']; t = d['t']; nnans_temp = d['nnans'];
-                D2.append(D2_temp)
-                # D2 = np.nansum(np.vstack([D2, D2_temp]), axis=0) # keep summing up D2 values but retaining time dim and not averaging yet
-                # nnans = nnans + nnans_temp
-                nnans.append(nnans_temp)
                 d.close()
                 # pdb.set_trace()
+            D2.append(D2_temp)
+            nnans.append(nnans_temp)
 
         # After I have run through all the times for this type of run, do average and save
         D2 = np.nansum(np.asarray(D2), axis=0) # sum the individual sums (already squared)

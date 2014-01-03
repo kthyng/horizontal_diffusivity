@@ -76,13 +76,17 @@ def disp(date, loc, grid=None):
     '''
 
     # Initialize parameters
-    nsteps = 5 # 5 time interpolation steps
-    ndays = 50
+    # For testing dependence of doturb=2 on time step
+    nsteps = 25 # 5 time interpolation steps
+    ndays = 10
+    # original test:
+    # nsteps = 5 # 5 time interpolation steps
+    # ndays = 50
     ff = 1 # This is a forward-moving simulation
 
     # Time between outputs
     tseas = 4*3600 # 4 hours between outputs, in seconds, time between model outputs 
-    ah = 0.
+    ah = 5.
     av = 0. # m^2/s
 
     if grid is None:
@@ -131,7 +135,7 @@ def disp(date, loc, grid=None):
 
     # for 3d flag, do3d=0 makes the run 2d and do3d=1 makes the run 3d
     do3d = 0
-    doturb = 0
+    doturb = 2
 
     # Flag for streamlines. All the extra steps right after this are for streamlines.
     dostream = 0

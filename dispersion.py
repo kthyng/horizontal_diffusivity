@@ -123,7 +123,7 @@ def run_dispersion():
 
     grid = tracpy.inout.readgrid(loc)
 
-    tests = glob.glob('tracks/doturb2_ah5_nsteps25') # types of simulations
+    tests = glob.glob('tracks/doturb2_ah5_nsteps50') # types of simulations
     # tests = glob.glob('tracks/do*') # types of simulations
 
     for test in tests: # loop through types of simulations
@@ -167,21 +167,21 @@ def run():
     grid = tracpy.inout.readgrid(loc)
 
     # Weekly Oct, Nov, Dec; biweekly Jan, Feb, Mar; monthly Apr, May, Jun, Jul
-    startdates = np.array([datetime(2010, 2, 1, 0, 1), datetime(2010, 2, 15, 0, 1),
-                            datetime(2010, 3, 1, 0, 1), datetime(2010, 3, 15, 0, 1),
-                            datetime(2010, 4, 1, 0, 1), datetime(2010, 5, 1, 0, 1),
-                            datetime(2010, 6, 1, 0, 1), datetime(2010, 7, 1, 0, 1)])
-    # startdates = np.array([datetime(2009, 10, 1, 0, 1), datetime(2009, 10, 8, 0, 1),
-    #                         datetime(2009, 10, 15, 0, 1), datetime(2009, 10, 22, 0, 1),
-    #                         datetime(2009, 11, 1, 0, 1), datetime(2009, 11, 8, 0, 1),
-    #                         datetime(2009, 11, 15, 0, 1), datetime(2009, 11, 22, 0, 1),
-    #                         datetime(2009, 12, 1, 0, 1), datetime(2009, 12, 8, 0, 1),
-    #                         datetime(2009, 12, 15, 0, 1), datetime(2009, 12, 22, 0, 1),
-    #                         datetime(2010, 1, 1, 0, 1), datetime(2010, 1, 15, 0, 1),
-    #                         datetime(2010, 2, 1, 0, 1), datetime(2010, 2, 15, 0, 1),
+    # startdates = np.array([datetime(2010, 2, 1, 0, 1), datetime(2010, 2, 15, 0, 1),
     #                         datetime(2010, 3, 1, 0, 1), datetime(2010, 3, 15, 0, 1),
     #                         datetime(2010, 4, 1, 0, 1), datetime(2010, 5, 1, 0, 1),
     #                         datetime(2010, 6, 1, 0, 1), datetime(2010, 7, 1, 0, 1)])
+    startdates = np.array([datetime(2009, 10, 1, 0, 1), datetime(2009, 10, 8, 0, 1),
+                            datetime(2009, 10, 15, 0, 1), datetime(2009, 10, 22, 0, 1),
+                            datetime(2009, 11, 1, 0, 1), datetime(2009, 11, 8, 0, 1),
+                            datetime(2009, 11, 15, 0, 1), datetime(2009, 11, 22, 0, 1),
+                            datetime(2009, 12, 1, 0, 1), datetime(2009, 12, 8, 0, 1),
+                            datetime(2009, 12, 15, 0, 1), datetime(2009, 12, 22, 0, 1),
+                            datetime(2010, 1, 1, 0, 1), datetime(2010, 1, 15, 0, 1),
+                            datetime(2010, 2, 1, 0, 1), datetime(2010, 2, 15, 0, 1),
+                            datetime(2010, 3, 1, 0, 1), datetime(2010, 3, 15, 0, 1),
+                            datetime(2010, 4, 1, 0, 1), datetime(2010, 5, 1, 0, 1),
+                            datetime(2010, 6, 1, 0, 1), datetime(2010, 7, 1, 0, 1)])
 
     # loop through state dates
     for startdate in startdates:
@@ -195,7 +195,7 @@ def run():
         #         grid, dostream, N, T0, U, V = init.disp(date, loc, grid=grid)
 
         # for dt test:
-        mod = 'doturb' + str(doturb) + '_ah' + str(int(ah)) + '_nsteps25/'
+        mod = 'doturb' + str(doturb) + '_ah' + str(int(ah)) + '_nsteps50/'
         # original test:
         # mod = 'doturb' + str(doturb) + '_ah' + str(int(ah)) + '/'
 

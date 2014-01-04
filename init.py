@@ -77,7 +77,7 @@ def disp(date, loc, grid=None):
 
     # Initialize parameters
     # For testing dependence of doturb=2 on time step
-    nsteps = 25 # 5 time interpolation steps
+    nsteps = 50 # 5 time interpolation steps
     ndays = 10
     # original test:
     # nsteps = 5 # 5 time interpolation steps

@@ -16,19 +16,6 @@ from datetime import datetime, timedelta
 import glob
 from matplotlib.mlab import find
 
-# def distance(pt, pts):
-#     '''
-#     Return distance between a point, pt, and an array of points, pts.
-#     pt      [x, y]
-#     pts     [xs, ys]
-#     '''
-
-#     # return np.sqrt((pt[0,:]-pts[0,:])**2 + (pt[1,:]-pts[1,:])**2)
-#     # Leave as squared since that is what the dispersion calculation uses
-#     # and it doesn't change the index order
-#     pt = pt#/1000.
-#     pts = pts#/1000.
-#     return ((pt[0]-pts[0,:])**2 + (pt[1]-pts[1,:])**2) # in kilometers
 
 # function to compute great circle distance between point lat1 and lon1 
 # and arrays of points given by lons, lats or both same length arrays
@@ -123,7 +110,7 @@ def run_dispersion():
 
     grid = tracpy.inout.readgrid(loc)
 
-    tests = glob.glob('tracks/doturb2_ah5_nsteps50') # types of simulations
+    tests = glob.glob('tracks/doturb2_ah50_nsteps50') # types of simulations
     # tests = glob.glob('tracks/do*') # types of simulations
 
     for test in tests: # loop through types of simulations
@@ -151,6 +138,123 @@ def run_dispersion():
         # save a sample time
         np.savez(Dnameoverall, D2=D2, t=t)
 
+def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
+    '''
+    Calculate the relative dispersion of tracks lonp, latp as directly compared with
+    the tracks described by lonpc, latpc. The two sets of tracks must start in the same 
+    locations since this is assumed for making "pairs" of drifters for comparison (and 
+    therefore pairs do not need to be found). The relative dispersion in this case is a
+    measure of the difference between the two simulations, and is aimed at being used
+    for examining differences in tracks due to changes in the numerical simulation.
+    The tracks should also be coincident in time, but the script will find a way to match
+    them up for the overlap periods.
+
+
+    Inputs:
+        lonpc, latpc    Longitude/latitude of the control drifter tracks [ndrifter,ntime]
+        lonp, latp      Longitude/latitude of the drifter tracks [ndrifter,ntime]
+        squared         Whether to present the results as separation distance squared or 
+                        not squared. Squared by default.
+
+    Outputs:
+        D2              Relative dispersion (squared or not) averaged over drifter 
+                        pairs [ntime]. In km (squared or not).
+        nnans           Number of non-nan time steps in calculations for averaging properly.
+                        Otherwise drifters that have exited the domain could affect calculations.
+
+    To combine with other calculations of relative dispersion, first multiply by nnans, then
+    combine with other relative dispersion calculations, then divide by the total number
+    of nnans.
+
+    Example call:
+    dc = netCDF.Dataset('tracks/tseas_use300_nsteps1.nc') (5 min, control output)
+    d = netCDF.Dataset('tracks/tseas_use1200_nsteps1.nc') (20 min, comparison output)
+    tracpy.calcs.rel_dispersion_comp(dc.variables['lonp'][:], dc.variables['latp'][:], dc.variables['tp'][:],
+                                     d.variables['lonp'][:], d.variables['latp'][:], d.variables['tp'][:],
+                                     squared=True)
+    '''
+
+    # We know that drifters from the two sets have a one to one correspondence
+    dist = get_dist(lonpc, lonp, latpc, latp)
+
+    Rs = np.asarray([0.1*alpha**i for i in np.arange(28)])
+
+    # Find first time dist>delta and dist>delta*alpha for each delta to
+    # then linearly interpolate to find the corresponding time
+    # FOR ONE DRIFTER TO START AND ONE DELTA
+    tau = np.zeros(Rs.size)
+    nnans = np.zeros(Rs.size) # not nans
+    for idrifter in xrange(dist.shape[0]):
+    # idrifter = 0
+        # delta = Rs[10]
+        for i, R in enumerate(Rs):
+
+            if R<=np.nanmax(dist[idrifter,:]) \
+                and Rs[i+1]<=np.nanmax(dist[idrifter,:]) \
+                and R>=dist[idrifter,0]:
+
+                # for delta
+                ind = find(dist[idrifter,:]>=R)[0]
+                time1 = np.interp(R, dist[idrifter, ind-1:ind+1], tp[ind-1:ind+1])
+                # print R, dist[idrifter,ind-1:ind+1]
+
+                # for delta*alpha
+                ind = find(dist[idrifter,:]>=Rs[i+1])[0]
+                time2 = np.interp(Rs[i+1], dist[idrifter, ind-1:ind+1], tp[ind-1:ind+1])
+                # print Rs[i+1], dist[idrifter,ind-1:ind+1]
+
+                dt = time2-time1
+
+            else:
+                dt = np.nan
+
+            if not np.isnan(dt):
+                # print R, dt
+                tau[i] += dt
+                nnans[i] += 1 # counting not-nan entries for averaging later
+
+    return tau, nnans, Rs
+
+def run_fsle():
+    '''
+    Calculate FSLE for all possible pairs of drifters (just need to be coincident
+    in time). 
+    '''
+
+    Files = glob('tracks/2008-*gc.nc')
+
+    for File in Files:
+
+        fname = 'calcs/' + File[:-5].split('/')[-1] + 'fsle.npz'
+
+        if os.path.exists(fname): # don't redo if already done
+            continue
+
+        d = netCDF.Dataset(File)
+        lonp = d.variables['lonp'][:]
+        latp = d.variables['latp'][:]
+        tp = d.variables['tp'][:]
+        d.close()
+
+        # Save altogether for a single simulation
+        fsle = np.zeros(28)
+        nnans = np.zeros(28)
+        ntrac = lonp.shape[0] # num drifters
+
+        for i in xrange(ntrac-1): # loop over drifters
+
+            fsletemp, nnanstemp, Rs = calc_fsle(lonp[i,:], latp[i,:], 
+                                        lonp[i+1:,:], latp[i+1:,:], tp)
+
+            fsle += fsletemp
+            nnans += nnanstemp
+
+            # Now average all pairs starting at this unique location
+            fsle = fsle/nnans
+        pdb.set_trace()
+        # save: fsle in time, averaged over all combinations of drifters starting at
+        # a unique river input point for a unique starting time
+        np.savez(fname, fsle=fsle, nnans=nnans, Rs=Rs)
 
 
 def run():

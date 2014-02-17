@@ -176,7 +176,7 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
 
     # We know that drifters from the two sets have a one to one correspondence
     dist = get_dist(lonpc, lonp, latpc, latp)
-
+    #pdb.set_trace()
     Rs = np.asarray([0.1*alpha**i for i in np.arange(28)])
 
     # Find first time dist>delta and dist>delta*alpha for each delta to
@@ -188,10 +188,10 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     # idrifter = 0
         # delta = Rs[10]
         for i, R in enumerate(Rs):
-
+	    pdb.set_trace()
             if R<=np.nanmax(dist[idrifter,:]) \
                 and Rs[i+1]<=np.nanmax(dist[idrifter,:]) \
-                and R>=dist[idrifter,0]:
+                and R>=dist[idrifter,:].any():
 
                 # for delta
                 ind = find(dist[idrifter,:]>=R)[0]
@@ -221,11 +221,11 @@ def run_fsle():
     in time). 
     '''
 
-    Files = glob('tracks/2008-*gc.nc')
+    Files = glob.glob('tracks/doturb2_ah5/*.nc')
 
     for File in Files:
 
-        fname = 'calcs/' + File[:-5].split('/')[-1] + 'fsle.npz'
+        fname = 'tracks/' + File[:-5].split('/')[-1] + 'fsle.npz'
 
         if os.path.exists(fname): # don't redo if already done
             continue
@@ -242,10 +242,10 @@ def run_fsle():
         ntrac = lonp.shape[0] # num drifters
 
         for i in xrange(ntrac-1): # loop over drifters
-
+	    pdb.set_trace()
             fsletemp, nnanstemp, Rs = calc_fsle(lonp[i,:], latp[i,:], 
                                         lonp[i+1:,:], latp[i+1:,:], tp)
-
+	    pdb.set_trace()
             fsle += fsletemp
             nnans += nnanstemp
 

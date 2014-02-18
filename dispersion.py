@@ -187,23 +187,81 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     for idrifter in xrange(dist.shape[0]):
     # idrifter = 0
         # delta = Rs[10]
-        for i, R in enumerate(Rs):
-	    pdb.set_trace()
-            if R<=np.nanmax(dist[idrifter,:]) \
-                and Rs[i+1]<=np.nanmax(dist[idrifter,:]) \
-                and R>=dist[idrifter,:].any():
+        for i, R in enumerate(Rs[:-1]):
+            # print idrifter, i
+    	    # pdb.set_trace()
+            if R>=np.nanmin(dist[idrifter,:]) \
+                and Rs[i+1]<=np.nanmax(dist[idrifter,:]):# \
+                # and R>=dist[idrifter,:].any():
 
-                # for delta
-                ind = find(dist[idrifter,:]>=R)[0]
-                time1 = np.interp(R, dist[idrifter, ind-1:ind+1], tp[ind-1:ind+1])
+                ##  for delta ##
+
+                # indices where separation is less than R
+                iwhereless = find(dist[idrifter,:]<=R)
+
+                # If there is more than 1 element
+                if iwhereless.size>1:
+                    # ind gives difference in instances of elements that are less than R
+                    # to find if consecutive or not
+                    ind =  np.diff(iwhereless)
+
+                    # if there is more than one set of consecutive drifters
+                    if (ind>1).sum():
+                        iUse = iwhereless[find(ind>1)][0]
+                    # otherwise there is just one set
+                    else:
+                        iUse = iwhereless[-1]
+                else:
+                    iUse = iwhereless
+
+
+                # indA = find(dist[idrifter,:]>=R)[0]
+                # indB = find(dist[idrifter,:]<=R)[-1]
+
+                # Can't do this if iUse is the last index
+                if not iUse==dist[idrifter,:].size-1:
+                    # if i==0:
+                    #     pdb.set_trace()
+                    time1 = np.interp(R, dist[idrifter, iUse:iUse+2], tp[iUse:iUse+2])
+                else:
+                    time1 = np.nan
                 # print R, dist[idrifter,ind-1:ind+1]
 
-                # for delta*alpha
-                ind = find(dist[idrifter,:]>=Rs[i+1])[0]
-                time2 = np.interp(Rs[i+1], dist[idrifter, ind-1:ind+1], tp[ind-1:ind+1])
+
+                ## for delta*alpha ##
+
+                # indices where separation is less than R
+                iwhereless = find(dist[idrifter,:]<=Rs[i+1])
+                 # has to end up with greater time than for R
+                iwhereless = iwhereless[find(iwhereless>=iUse)]
+
+                # If there is more than 1 element
+                if iwhereless.size>1:
+                    # ind gives difference in instances of elements that are less than R
+                    # to find if consecutive or not
+                    ind =  np.diff(iwhereless)
+
+                    # if there is more than one set of consecutive drifters
+                    if (ind>1).sum():
+                        iUse = iwhereless[find(ind>1)][0]
+                    # otherwise there is just one set
+                    else:
+                        iUse = iwhereless[-1]
+                else:
+                    iUse = iwhereless
+
+
+                # ind = find(dist[idrifter,:]>=Rs[i+1])[0]
+                # Can't do this if iUse is the last index
+                if not iUse==dist[idrifter,:].size-1:
+                    time2 = np.interp(Rs[i+1], dist[idrifter, iUse:iUse+2], tp[iUse:iUse+2])
                 # print Rs[i+1], dist[idrifter,ind-1:ind+1]
+                else:
+                    time2 = np.nan
 
                 dt = time2-time1
+                if dt<0:
+                    pdb.set_trace()
 
             else:
                 dt = np.nan
@@ -212,7 +270,7 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
                 # print R, dt
                 tau[i] += dt
                 nnans[i] += 1 # counting not-nan entries for averaging later
-
+    # pdb.set_trace()
     return tau, nnans, Rs
 
 def run_fsle():
@@ -242,16 +300,16 @@ def run_fsle():
         ntrac = lonp.shape[0] # num drifters
 
         for i in xrange(ntrac-1): # loop over drifters
-	    pdb.set_trace()
+            # pdb.set_trace()
             fsletemp, nnanstemp, Rs = calc_fsle(lonp[i,:], latp[i,:], 
                                         lonp[i+1:,:], latp[i+1:,:], tp)
-	    pdb.set_trace()
+    	    # pdb.set_trace()
             fsle += fsletemp
             nnans += nnanstemp
 
-            # Now average all pairs starting at this unique location
-            fsle = fsle/nnans
-        pdb.set_trace()
+            # NOT Now average all pairs starting at this unique location
+            # fsle = fsle/nnans
+        # pdb.set_trace()
         # save: fsle in time, averaged over all combinations of drifters starting at
         # a unique river input point for a unique starting time
         np.savez(fname, fsle=fsle, nnans=nnans, Rs=Rs)

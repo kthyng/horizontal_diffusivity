@@ -179,22 +179,50 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     #pdb.set_trace()
     Rs = np.asarray([0.1*alpha**i for i in np.arange(28)])
 
+    ntrac = dist.shape[0]
+
     # Find first time dist>delta and dist>delta*alpha for each delta to
     # then linearly interpolate to find the corresponding time
     # FOR ONE DRIFTER TO START AND ONE DELTA
     tau = np.zeros(Rs.size)
     nnans = np.zeros(Rs.size) # not nans
     for idrifter in xrange(dist.shape[0]):
-    # idrifter = 0
-        # delta = Rs[10]
+
         for i, R in enumerate(Rs[:-1]):
             # print idrifter, i
-    	    # pdb.set_trace()
+    	    pdb.set_trace()
             if R>=np.nanmin(dist[idrifter,:]) \
                 and Rs[i+1]<=np.nanmax(dist[idrifter,:]):# \
                 # and R>=dist[idrifter,:].any():
 
                 ##  for delta ##
+
+                # initialize iUse so i can avoid a loop
+                iUse1 = np.zeros(ntrac)
+
+                # indices where separation is less than R
+                iwhereless = dist<=R
+
+                ## one case
+                imorethan1 = iwhereless.sum(axis=1)>1
+                ind = np.diff(iwhereless, axis=1)
+
+                # one sub-case
+                iindmorethan1 = (ind>1).sum(axis=1)
+                iUse1[iindmorethan1] = iwhereless[iindmorethan1,:].argmax(axis=1)
+
+                # another sub-case
+                iindnotmorethan1 = ~iindmorethan1
+                iUse1[iindnotmorethan1] = iwhereless[iindnotmorethan1,-1]
+
+
+                ## second case
+                iequals1 = iwhereless.sum(axis=1)==1
+                iUse1[iequals1] = iwhereless[iequals1]
+
+
+
+
 
                 # indices where separation is less than R
                 iwhereless = find(dist[idrifter,:]<=R)

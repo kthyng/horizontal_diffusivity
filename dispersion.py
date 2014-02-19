@@ -175,129 +175,229 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     '''
 
     # We know that drifters from the two sets have a one to one correspondence
-    dist = get_dist(lonpc, lonp, latpc, latp)
+    dist = get_dist(lonpc, lonp, latpc, latp) # in km
     #pdb.set_trace()
-    Rs = np.asarray([0.1*alpha**i for i in np.arange(28)])
+    Rs = np.asarray([0.1*alpha**i for i in np.arange(28)]) # in km
 
     ntrac = dist.shape[0]
+    nt = dist.shape[1]
 
     # Find first time dist>delta and dist>delta*alpha for each delta to
     # then linearly interpolate to find the corresponding time
     # FOR ONE DRIFTER TO START AND ONE DELTA
     tau = np.zeros(Rs.size)
     nnans = np.zeros(Rs.size) # not nans
-    for idrifter in xrange(dist.shape[0]):
+    # for idrifter in xrange(dist.shape[0]):
 
-        for i, R in enumerate(Rs[:-1]):
-            # print idrifter, i
-    	    pdb.set_trace()
-            if R>=np.nanmin(dist[idrifter,:]) \
-                and Rs[i+1]<=np.nanmax(dist[idrifter,:]):# \
-                # and R>=dist[idrifter,:].any():
+    for i, R in enumerate(Rs[:-1]):
+        # print idrifter, i
+        # if R>=np.nanmin(dist[idrifter,:]) \
+        #     and Rs[i+1]<=np.nanmax(dist[idrifter,:]):# \
+        # and R>=dist[idrifter,:].any():
 
-                ##  for delta ##
+        ##  for delta ##
 
-                # initialize iUse so i can avoid a loop
-                iUse1 = np.zeros(ntrac)
-
-                # indices where separation is less than R
-                iwhereless = dist<=R
-
-                ## one case
-                imorethan1 = iwhereless.sum(axis=1)>1
-                ind = np.diff(iwhereless, axis=1)
-
-                # one sub-case
-                iindmorethan1 = (ind>1).sum(axis=1)
-                iUse1[iindmorethan1] = iwhereless[iindmorethan1,:].argmax(axis=1)
-
-                # another sub-case
-                iindnotmorethan1 = ~iindmorethan1
-                iUse1[iindnotmorethan1] = iwhereless[iindnotmorethan1,-1]
+        # # initialize iUse so i can avoid a loop
+        # iUse1 = np.ones(ntrac)*np.nan
 
 
-                ## second case
-                iequals1 = iwhereless.sum(axis=1)==1
-                iUse1[iequals1] = iwhereless[iequals1]
+        # # Drifter indices where there is more than one element below R
+        # imorethan1element = np.sum(dist<=R, axis=1).astype(bool)
+
+        # # For this case where there is more than one element below R,
+        # # need to separate between the case where there is just one set of
+        # # consecutive elements below R or multiple cases, because we want the
+        # # index of the last element of the first set of consecutive instances
+        # # below R (in order to get the index immediately below).
+
+        # # bools of drifter indices of whether there is more than 1 set of 
+        # # consecutive elements below R
+        # imorethan1set = np.sum(np.diff(dist<=R, axis=1)>1, axis=1).astype(bool)
+
+
+        # # Want indices here of bools of how many sets of drifte
+        # imorethan1set = (np.diff(dist<=R, axis=1)>1).argmax(axis=1)
+
+
+        # indices of the first time the info changes from lower than R to higher
+        ind1 = np.diff((dist<=R).astype(int), axis=1).argmin(axis=1)
+
+        # These contain the indices in dist and tp of the elements below and above R
+        distUse = np.vstack((dist[np.arange(0,ntrac),ind1], dist[np.arange(0,ntrac),ind1+1])).T
+        tp2d = tp[np.newaxis,:].repeat(ntrac, axis=0)
+        tpUse = np.vstack((tp2d[np.arange(0,ntrac),ind1], tp2d[np.arange(0,ntrac),ind1+1])).T
+
+
+        # Replace incorrect cases (when zero was chosen by default) with nan's
+        # bad cases: had defaulted to zero, or picked out last index
+        # or: picked out last index before nans
+        # or if dist that is greater than R accidentally got picked out
+        nanind = (distUse[:,1]<distUse[:,0]) \
+                    + (ind1==nt-1) \
+                    + (np.isnan(dist[np.arange(0,ntrac),ind1+1])) \
+                    + (dist[np.arange(0,ntrac),ind1]>R)
+        distUse[nanind,:] = np.nan
+        tpUse[nanind,:] = np.nan
+
+        # Do linear interpolation by hand because interp won't take in arrays
+        rp = (R-distUse[:,0])/(distUse[:,1] - distUse[:,0]) # weighting for higher side
+        rm = 1 - rp # weighting for lower side
+
+        # now find the interpolation time for each drifter
+        time1 = rm*tpUse[:,0] + rp*tpUse[:,1]
+
+        # if i==19:
+        # pdb.set_trace()
+
+        ## for delta*alpha ##
+
+        # indices of the first time the info changes from lower than R to higher
+        indtemp = np.diff((dist<=Rs[i+1]).astype(int), axis=1)
+        ind2 = indtemp.argmin(axis=1)
+
+        while np.sum(ind2<ind1)>0:
+            iskip = ind2<ind1
+            # indtemp = np.diff((dist<=Rs[i+1]).astype(int), axis=1)
+            indtemp[iskip,ind2[iskip]] = 0
+            ind2 = indtemp.argmin(axis=1)
+
+        # These contain the indices in dist and tp of the elements below and above R
+        distUse = np.vstack((dist[np.arange(0,ntrac),ind2], dist[np.arange(0,ntrac),ind2+1])).T
+        tpUse = np.vstack((tp2d[np.arange(0,ntrac),ind2], tp2d[np.arange(0,ntrac),ind2+1])).T
+
+
+        # Replace incorrect cases (when zero was chosen by default) with nan's
+        # bad cases: had defaulted to zero, or picked out last index
+        # also add on here the case when the ind2 value is smaller than ind1. There should
+        # be a better way to single these out, but there aren't too many so I am just 
+        # going to delete them for now
+        nanind = (distUse[:,1]<distUse[:,0])
+        distUse[nanind,:] = np.nan
+        tpUse[nanind,:] = np.nan
+        # if i==19:
+        # pdb.set_trace()
+
+        # Do linear interpolation by hand because interp won't take in arrays
+        rp = (Rs[i+1]-distUse[:,0])/(distUse[:,1] - distUse[:,0]) # weighting for higher side
+        rm = 1 - rp # weighting for lower side
+
+        # now find the interpolation time for each drifter
+        time2 = rm*tpUse[:,0] + rp*tpUse[:,1]
+
+
+        dt = time2 - time1 # in seconds
+        dt /= 3600.*24 # in days
+
+        nanind = np.isnan(dt)
+        tau[i] = dt[~nanind].sum()
+        nnans[i] = (~nanind).sum()
+
+        # pdb.set_trace()
+
+        # # indices where separation is less than R, so we can then pick out the index
+        # # just below the R value
+        # # argmax selects index while retaining row structure
+        # iwhereless = dist[dist<=R]
+
+        # ## one case: if there is more than one element below R
+        # # indices of which drifter tracks have more than 1 value below R
+        # imorethan1 = iwhereless.sum(axis=1)>1 
+        # # ind gives difference in instances of elements that are less than R
+        # # to find if consecutive or not
+        # ind = np.diff(iwhereless, axis=1)
+
+        #  # one sub-case: if there is more than one set of consecutive drifters
+        #  # want consecutive since want the final value of the first set of instances
+        # iindmorethan1 = (ind>1).sum(axis=1).astype(bool)
+        # iUse1[iindmorethan1] = iwhereless[iindmorethan1,:].argmax(axis=1)
+
+        #  # another sub-case: if there is just one set of consecutive lower-valued drifters
+        # iindnotmorethan1 = (ind==1).sum(axis=1).astype(bool)
+        # iUse1[iindnotmorethan1] = iwhereless[iindnotmorethan1,-1]
+
+
+        # ## second case: if there is not more than one element below R
+        # iequals1 = iwhereless.sum(axis=1)==1
+        # iUse1[iequals1] = iwhereless[iequals1]
 
 
 
 
 
-                # indices where separation is less than R
-                iwhereless = find(dist[idrifter,:]<=R)
+        # # indices where separation is less than R
+        # iwhereless = find(dist[idrifter,:]<=R)
 
-                # If there is more than 1 element
-                if iwhereless.size>1:
-                    # ind gives difference in instances of elements that are less than R
-                    # to find if consecutive or not
-                    ind =  np.diff(iwhereless)
+        # # If there is more than 1 element
+        # if iwhereless.size>1:
+        #     # ind gives difference in instances of elements that are less than R
+        #     # to find if consecutive or not
+        #     ind =  np.diff(iwhereless)
 
-                    # if there is more than one set of consecutive drifters
-                    if (ind>1).sum():
-                        iUse = iwhereless[find(ind>1)][0]
-                    # otherwise there is just one set
-                    else:
-                        iUse = iwhereless[-1]
-                else:
-                    iUse = iwhereless
-
-
-                # indA = find(dist[idrifter,:]>=R)[0]
-                # indB = find(dist[idrifter,:]<=R)[-1]
-
-                # Can't do this if iUse is the last index
-                if not iUse==dist[idrifter,:].size-1:
-                    # if i==0:
-                    #     pdb.set_trace()
-                    time1 = np.interp(R, dist[idrifter, iUse:iUse+2], tp[iUse:iUse+2])
-                else:
-                    time1 = np.nan
-                # print R, dist[idrifter,ind-1:ind+1]
+        #     # if there is more than one set of consecutive drifters
+        #     if (ind>1).sum():
+        #         iUse = iwhereless[find(ind>1)][0]
+        #     # otherwise there is just one set
+        #     else:
+        #         iUse = iwhereless[-1]
+        # else:
+        #     iUse = iwhereless
 
 
-                ## for delta*alpha ##
+        # # indA = find(dist[idrifter,:]>=R)[0]
+        # # indB = find(dist[idrifter,:]<=R)[-1]
 
-                # indices where separation is less than R
-                iwhereless = find(dist[idrifter,:]<=Rs[i+1])
-                 # has to end up with greater time than for R
-                iwhereless = iwhereless[find(iwhereless>=iUse)]
-
-                # If there is more than 1 element
-                if iwhereless.size>1:
-                    # ind gives difference in instances of elements that are less than R
-                    # to find if consecutive or not
-                    ind =  np.diff(iwhereless)
-
-                    # if there is more than one set of consecutive drifters
-                    if (ind>1).sum():
-                        iUse = iwhereless[find(ind>1)][0]
-                    # otherwise there is just one set
-                    else:
-                        iUse = iwhereless[-1]
-                else:
-                    iUse = iwhereless
+        # # Can't do this if iUse is the last index
+        # if not iUse==dist[idrifter,:].size-1:
+        #     # if i==0:
+        #     #     pdb.set_trace()
+        #     time1 = np.interp(R, dist[idrifter, iUse:iUse+2], tp[iUse:iUse+2])
+        # else:
+        #     time1 = np.nan
+        # # print R, dist[idrifter,ind-1:ind+1]
 
 
-                # ind = find(dist[idrifter,:]>=Rs[i+1])[0]
-                # Can't do this if iUse is the last index
-                if not iUse==dist[idrifter,:].size-1:
-                    time2 = np.interp(Rs[i+1], dist[idrifter, iUse:iUse+2], tp[iUse:iUse+2])
-                # print Rs[i+1], dist[idrifter,ind-1:ind+1]
-                else:
-                    time2 = np.nan
+        # ## for delta*alpha ##
 
-                dt = time2-time1
-                if dt<0:
-                    pdb.set_trace()
+        # # indices where separation is less than R
+        # iwhereless = find(dist[idrifter,:]<=Rs[i+1])
+        #  # has to end up with greater time than for R
+        # iwhereless = iwhereless[find(iwhereless>=iUse)]
 
-            else:
-                dt = np.nan
+        # # If there is more than 1 element
+        # if iwhereless.size>1:
+        #     # ind gives difference in instances of elements that are less than R
+        #     # to find if consecutive or not
+        #     ind =  np.diff(iwhereless)
 
-            if not np.isnan(dt):
-                # print R, dt
-                tau[i] += dt
-                nnans[i] += 1 # counting not-nan entries for averaging later
+        #     # if there is more than one set of consecutive drifters
+        #     if (ind>1).sum():
+        #         iUse = iwhereless[find(ind>1)][0]
+        #     # otherwise there is just one set
+        #     else:
+        #         iUse = iwhereless[-1]
+        # else:
+        #     iUse = iwhereless
+
+
+        # # ind = find(dist[idrifter,:]>=Rs[i+1])[0]
+        # # Can't do this if iUse is the last index
+        # if not iUse==dist[idrifter,:].size-1:
+        #     time2 = np.interp(Rs[i+1], dist[idrifter, iUse:iUse+2], tp[iUse:iUse+2])
+        # # print Rs[i+1], dist[idrifter,ind-1:ind+1]
+        # else:
+        #     time2 = np.nan
+
+        # dt = time2-time1
+        # if dt<0:
+        #     pdb.set_trace()
+
+    # else:
+    #     dt = np.nan
+
+    # if not np.isnan(dt):
+    #     # print R, dt
+    #     tau[i] += dt
+    #     nnans[i] += 1 # counting not-nan entries for averaging later
     # pdb.set_trace()
     return tau, nnans, Rs
 
@@ -331,13 +431,13 @@ def run_fsle():
             # pdb.set_trace()
             fsletemp, nnanstemp, Rs = calc_fsle(lonp[i,:], latp[i,:], 
                                         lonp[i+1:,:], latp[i+1:,:], tp)
-    	    # pdb.set_trace()
+            # pdb.set_trace()
             fsle += fsletemp
             nnans += nnanstemp
 
             # NOT Now average all pairs starting at this unique location
             # fsle = fsle/nnans
-        # pdb.set_trace()
+        pdb.set_trace()
         # save: fsle in time, averaged over all combinations of drifters starting at
         # a unique river input point for a unique starting time
         np.savez(fname, fsle=fsle, nnans=nnans, Rs=Rs)

@@ -66,13 +66,15 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
                                      d.variables['lonp'][:], d.variables['latp'][:], d.variables['tp'][:],
                                      squared=True)
     '''
-    # We know that drifters from the two sets have a one to one correspondence
+ 
     dist = get_dist(lonpc, lonp, latpc, latp) # in km
     dist = dist[np.newaxis,:]
+
+    # distances increasing with factor alpha
     Rs = np.asarray([0.5*alpha**i for i in np.arange(20)]) # in km
     # Rs = np.asarray([0.1*alpha**i for i in np.arange(28)]) # in km
 
-    # pdb.set_trace()
+    pdb.set_trace()
 
     r0 = dist[:,0]
     Rs = np.asarray([r0*alpha**i for i in np.arange(20)]) # in km
@@ -230,8 +232,8 @@ def run():
 
         fname = File[:-3] + 'fsle.npz'
 
-        if os.path.exists(fname): # don't redo if already done
-            continue
+        # if os.path.exists(fname): # don't redo if already done
+        #     continue
 
         d = netCDF.Dataset(File)
         lonp = d.variables['lonp'][:]

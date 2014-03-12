@@ -74,86 +74,105 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
 
     # pdb.set_trace()
 
-    ntrac = dist.shape[0]
-    nt = dist.shape[1]
+    r0 = dist[:,0]
+    Rs = np.asarray([r0*alpha**i for i in np.arange(20)]) # in km
+    # # The distances right after passing Rs values
+    # dist[0,(dist>=Rs).argmax(axis=1)]
+    # Indices of where in dist the first entries are that are
+    # just bigger than the Rs
+    idist = (dist>=Rs).argmax(axis=1)
+    # Indices of entries that don't count
+    ind = find(idist==0)
+    # distances at the relevant distances (including ones we don't want at the end)
+    dSave = dist[0,idist]
+    # times at the relevant distances
+    tSave = (tp-tp[0])[idist] # in seconds
+    # Eliminate bad entries, but skip first since that 0 value should be there
+    dSave[ind[1:]] = np.nan
+    tSave[ind[1:]] = np.nan
 
-    # Find first time dist>delta and dist>delta*alpha for each delta to
-    # then linearly interpolate to find the corresponding time
-    tau = np.zeros(Rs.size)
-    nnans = np.zeros(Rs.size) # not nans
+    return dSave, tSave
 
-    for i, R in enumerate(Rs[:-1]):
+    # ntrac = dist.shape[0]
+    # nt = dist.shape[1]
 
-        # indices of the first time the info changes from lower than R to higher
-        ind1 = np.diff((dist<=R).astype(int), axis=1).argmin(axis=1)
+    # # Find first time dist>delta and dist>delta*alpha for each delta to
+    # # then linearly interpolate to find the corresponding time
+    # tau = np.zeros(Rs.size)
+    # nnans = np.zeros(Rs.size) # not nans
 
-        # These contain the indices in dist and tp of the elements below and above R
-        distUse = np.vstack((dist[np.arange(0,ntrac),ind1], dist[np.arange(0,ntrac),ind1+1])).T
-        tp2d = tp[np.newaxis,:].repeat(ntrac, axis=0)
-        tpUse = np.vstack((tp2d[np.arange(0,ntrac),ind1], tp2d[np.arange(0,ntrac),ind1+1])).T
+    # for i, R in enumerate(Rs[:-1]):
 
+    #     # indices of the first time the info changes from lower than R to higher
+    #     ind1 = np.diff((dist<=R).astype(int), axis=1).argmin(axis=1)
 
-        # Replace incorrect cases (when zero was chosen by default) with nan's
-        # bad cases: had defaulted to zero, or picked out last index
-        # or: picked out last index before nans
-        # or if dist that is greater than R accidentally got picked out
-        nanind = (distUse[:,1]<distUse[:,0]) \
-                    + (ind1==nt-1) \
-                    + (np.isnan(dist[np.arange(0,ntrac),ind1+1])) \
-                    + (dist[np.arange(0,ntrac),ind1]>R)
-        distUse[nanind,:] = np.nan
-        tpUse[nanind,:] = np.nan
-
-        # Do linear interpolation by hand because interp won't take in arrays
-        rp = (R-distUse[:,0])/(distUse[:,1] - distUse[:,0]) # weighting for higher side
-        rm = 1 - rp # weighting for lower side
-
-        # now find the interpolation time for each drifter
-        time1 = rm*tpUse[:,0] + rp*tpUse[:,1]
-
-        ## for delta*alpha ##
-
-        # indices of the first time the info changes from lower than R to higher
-        indtemp = np.diff((dist<=Rs[i+1]).astype(int), axis=1)
-        ibad = np.sum(indtemp==-1, axis=1)==0 # when indtemp doesnt change sign, values never below Rs[i+1]
-        ind2 = indtemp.argmin(axis=1)
-        ind2[ibad] = -1 # need to use an integer since int array
-        # pdb.set_trace()
-        while np.sum(ind2[~ibad]<ind1[~ibad])>0: # don't count the -1's
-            iskip = ind2<ind1
-            # indtemp = np.diff((dist<=Rs[i+1]).astype(int), axis=1)
-            indtemp[iskip,ind2[iskip]] = 0
-            ibad = np.sum(indtemp==-1, axis=1)==0 # when indtemp doesnt change sign, values never below Rs[i+1]
-            ind2 = indtemp.argmin(axis=1)
-            ind2[ibad] = -1 # need to use an integer since int array
-
-        # These contain the indices in dist and tp of the elements below and above R
-        distUse = np.vstack((dist[np.arange(0,ntrac),ind2], dist[np.arange(0,ntrac),ind2+1])).T
-        tpUse = np.vstack((tp2d[np.arange(0,ntrac),ind2], tp2d[np.arange(0,ntrac),ind2+1])).T
+    #     # These contain the indices in dist and tp of the elements below and above R
+    #     distUse = np.vstack((dist[np.arange(0,ntrac),ind1], dist[np.arange(0,ntrac),ind1+1])).T
+    #     tp2d = tp[np.newaxis,:].repeat(ntrac, axis=0)
+    #     tpUse = np.vstack((tp2d[np.arange(0,ntrac),ind1], tp2d[np.arange(0,ntrac),ind1+1])).T
 
 
-        # Replace incorrect cases (when zero was chosen by default) with nan's
-        # bad cases: had defaulted to zero, or picked out last index
-        # also eliminating when I have already identified drifters that do not go below Rs[i+1]
-        nanind = (distUse[:,1]<distUse[:,0]) + (ind2==-1)
-        distUse[nanind,:] = np.nan
-        tpUse[nanind,:] = np.nan
+    #     # Replace incorrect cases (when zero was chosen by default) with nan's
+    #     # bad cases: had defaulted to zero, or picked out last index
+    #     # or: picked out last index before nans
+    #     # or if dist that is greater than R accidentally got picked out
+    #     nanind = (distUse[:,1]<distUse[:,0]) \
+    #                 + (ind1==nt-1) \
+    #                 + (np.isnan(dist[np.arange(0,ntrac),ind1+1])) \
+    #                 + (dist[np.arange(0,ntrac),ind1]>R)
+    #     distUse[nanind,:] = np.nan
+    #     tpUse[nanind,:] = np.nan
 
-        # Do linear interpolation by hand because interp won't take in arrays
-        rp = (Rs[i+1]-distUse[:,0])/(distUse[:,1] - distUse[:,0]) # weighting for higher side
-        rm = 1 - rp # weighting for lower side
+    #     # Do linear interpolation by hand because interp won't take in arrays
+    #     rp = (R-distUse[:,0])/(distUse[:,1] - distUse[:,0]) # weighting for higher side
+    #     rm = 1 - rp # weighting for lower side
 
-        # now find the interpolation time for each drifter
-        time2 = rm*tpUse[:,0] + rp*tpUse[:,1]
+    #     # now find the interpolation time for each drifter
+    #     time1 = rm*tpUse[:,0] + rp*tpUse[:,1]
 
-        dt = time2 - time1 # in seconds
-        dt /= 3600.*24 # in days
+    #     ## for delta*alpha ##
 
-        nanind = np.isnan(dt)
-        tau[i] = dt[~nanind].sum()
-        nnans[i] = (~nanind).sum()
+    #     # indices of the first time the info changes from lower than R to higher
+    #     indtemp = np.diff((dist<=Rs[i+1]).astype(int), axis=1)
+    #     ibad = np.sum(indtemp==-1, axis=1)==0 # when indtemp doesnt change sign, values never below Rs[i+1]
+    #     ind2 = indtemp.argmin(axis=1)
+    #     ind2[ibad] = -1 # need to use an integer since int array
+    #     # pdb.set_trace()
+    #     while np.sum(ind2[~ibad]<ind1[~ibad])>0: # don't count the -1's
+    #         iskip = ind2<ind1
+    #         # indtemp = np.diff((dist<=Rs[i+1]).astype(int), axis=1)
+    #         indtemp[iskip,ind2[iskip]] = 0
+    #         ibad = np.sum(indtemp==-1, axis=1)==0 # when indtemp doesnt change sign, values never below Rs[i+1]
+    #         ind2 = indtemp.argmin(axis=1)
+    #         ind2[ibad] = -1 # need to use an integer since int array
 
-    return tau, nnans, Rs
+    #     # These contain the indices in dist and tp of the elements below and above R
+    #     distUse = np.vstack((dist[np.arange(0,ntrac),ind2], dist[np.arange(0,ntrac),ind2+1])).T
+    #     tpUse = np.vstack((tp2d[np.arange(0,ntrac),ind2], tp2d[np.arange(0,ntrac),ind2+1])).T
+
+
+    #     # Replace incorrect cases (when zero was chosen by default) with nan's
+    #     # bad cases: had defaulted to zero, or picked out last index
+    #     # also eliminating when I have already identified drifters that do not go below Rs[i+1]
+    #     nanind = (distUse[:,1]<distUse[:,0]) + (ind2==-1)
+    #     distUse[nanind,:] = np.nan
+    #     tpUse[nanind,:] = np.nan
+
+    #     # Do linear interpolation by hand because interp won't take in arrays
+    #     rp = (Rs[i+1]-distUse[:,0])/(distUse[:,1] - distUse[:,0]) # weighting for higher side
+    #     rm = 1 - rp # weighting for lower side
+
+    #     # now find the interpolation time for each drifter
+    #     time2 = rm*tpUse[:,0] + rp*tpUse[:,1]
+
+    #     dt = time2 - time1 # in seconds
+    #     dt /= 3600.*24 # in days
+
+    #     nanind = np.isnan(dt)
+    #     tau[i] = dt[~nanind].sum()
+    #     nnans[i] = (~nanind).sum()
+
+    # return tau, nnans, Rs
 
 def plot():
 
@@ -251,14 +270,17 @@ def run():
         # Loop over pairs of drifters from this area/time period and sum the FSLE, 
         # then average at the end
 
-        fsle = np.zeros(20)
+        dSave = np.zeros(20)
         nnans = np.zeros(20) # to collect number of non-nans over all drifters for a time
         for ipair in xrange(len(pairs)):
 
-            fsletemp, nnanstemp, Rs = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
+            dSavetemp, tSave = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
                                         lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
-            fsle += fsletemp
-            nnans += nnanstemp
+            ind = ~np.isnan(dSavetemp)
+            dSave[ind] += dSavetemp[ind]
+            nnans[~ind] += 1
+            # fsle += fsletemp
+            # nnans += nnanstemp
 
         # Save fsle for each file/area combination, NOT averaged
         np.savez(fname, fsle=fsle, nnans=nnans, Rs=Rs)

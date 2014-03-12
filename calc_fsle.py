@@ -71,10 +71,10 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     dist = dist[np.newaxis,:]
 
     # distances increasing with factor alpha
-    Rs = np.asarray([0.5*alpha**i for i in np.arange(20)]) # in km
+    #Rs = np.asarray([0.5*alpha**i for i in np.arange(20)]) # in km
     # Rs = np.asarray([0.1*alpha**i for i in np.arange(28)]) # in km
 
-    pdb.set_trace()
+#    pdb.set_trace()
 
     r0 = dist[:,0]
     Rs = np.asarray([r0*alpha**i for i in np.arange(20)]) # in km
@@ -273,19 +273,21 @@ def run():
         # then average at the end
 
         dSave = np.zeros(20)
+	tSave = np.zeros(20)
         nnans = np.zeros(20) # to collect number of non-nans over all drifters for a time
         for ipair in xrange(len(pairs)):
 
-            dSavetemp, tSave = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
+            dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
                                         lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
             ind = ~np.isnan(dSavetemp)
             dSave[ind] += dSavetemp[ind]
-            nnans[~ind] += 1
+	    tSave[ind] += tSavetemp[ind]
+            nnans[ind] += 1
             # fsle += fsletemp
             # nnans += nnanstemp
 
         # Save fsle for each file/area combination, NOT averaged
-        np.savez(fname, fsle=fsle, nnans=nnans, Rs=Rs)
+        np.savez(fname, dSave=dSave, tSave=tSave, nnans=nnans)
         print 'saved file', fname
 
 

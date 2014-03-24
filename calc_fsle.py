@@ -71,13 +71,13 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     dist = dist[np.newaxis,:]
 
     # distances increasing with factor alpha
-    #Rs = np.asarray([0.5*alpha**i for i in np.arange(20)]) # in km
+    Rs = np.asarray([np.array([0.7])*alpha**i for i in np.arange(20)]) # in km
     # Rs = np.asarray([0.1*alpha**i for i in np.arange(28)]) # in km
 
-#    pdb.set_trace()
+    # pdb.set_trace()
 
-    r0 = dist[:,0]
-    Rs = np.asarray([r0*alpha**i for i in np.arange(20)]) # in km
+    #r0 = dist[:,0]
+    #Rs = np.asarray([r0*alpha**i for i in np.arange(20)]) # in km
     # # The distances right after passing Rs values
     # dist[0,(dist>=Rs).argmax(axis=1)]
     # Indices of where in dist the first entries are that are
@@ -85,15 +85,21 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     idist = (dist>=Rs).argmax(axis=1)
     # Indices of entries that don't count
     ind = find(idist==0)
+    indtemp = ind!=0
+    ind = ind[indtemp] # don't want to skip first zero if it is there
     # distances at the relevant distances (including ones we don't want at the end)
     dSave = dist[0,idist]
     # times at the relevant distances
-    tSave = (tp-tp[0])[idist] # in seconds
+    #tSave = tp[idist] # in datetime representation
+    from datetime import datetime
+    units = 'seconds since 1970-01-01'
+    t0 = netCDF.date2num(datetime(2009,10,1,0,0), units)
+    tSave = (tp-t0)[idist] # in seconds
     # Eliminate bad entries, but skip first since that 0 value should be there
-    dSave[ind[1:]] = np.nan
-    tSave[ind[1:]] = np.nan
-
-    return dSave, tSave
+    dSave[ind] = np.nan
+    tSave[ind] = np.nan
+    pdb.set_trace()
+    return dSave, tSave/(3600.*24) # tSave in days
 
     # ntrac = dist.shape[0]
     # nt = dist.shape[1]
@@ -273,7 +279,7 @@ def run():
         # then average at the end
 
         dSave = np.zeros(20)
-	tSave = np.zeros(20)
+    	tSave = np.zeros(20)
         nnans = np.zeros(20) # to collect number of non-nans over all drifters for a time
         for ipair in xrange(len(pairs)):
 
@@ -281,7 +287,7 @@ def run():
                                         lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
             ind = ~np.isnan(dSavetemp)
             dSave[ind] += dSavetemp[ind]
-	    tSave[ind] += tSavetemp[ind]
+    	    tSave[ind] += tSavetemp[ind]
             nnans[ind] += 1
             # fsle += fsletemp
             # nnans += nnanstemp

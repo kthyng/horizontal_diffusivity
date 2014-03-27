@@ -84,9 +84,6 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
 
     # distances increasing with factor alpha
     Rs = np.asarray([np.array([0.7])*alpha**i for i in np.arange(20)]) # in km
-    # Rs = np.asarray([0.1*alpha**i for i in np.arange(28)]) # in km
-
-    # pdb.set_trace()
 
     # times at the relevant distances
     #tSave = tp[idist] # in datetime representation
@@ -94,33 +91,24 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     units = 'seconds since 1970-01-01'
     t0 = netCDF.date2num(datetime(2009,10,1,0,0), units)
     tshift = (tp-t0)
-    # dt = tshift[1] - tshift[0]
-    dthigh = 40.
-    tshifthigh = np.arange(tshift[0], tshift[-1], dthigh)
 
-    # Interpolate based on the time since it does increase monotonically
-    disthigh = np.interp(tshifthigh[1:], tshift, dist[0])
-
-    #r0 = dist[:,0]
-    #Rs = np.asarray([r0*alpha**i for i in np.arange(20)]) # in km
     # # The distances right after passing Rs values
     # dist[0,(dist>=Rs).argmax(axis=1)]
     # Indices of where in dist the first entries are that are
     # just bigger than the Rs
-    idist = (disthigh>=Rs).argmax(axis=1)
+    idist = (dist>=Rs).argmax(axis=1)
     # Indices of entries that don't count
     ind = find(idist==0)
     indtemp = ind!=0
     ind = ind[indtemp] # don't want to skip first zero if it is there
     # distances at the relevant distances (including ones we don't want at the end)
-    dSave = disthigh[idist]
-    tSave = tshifthigh[idist] # in seconds
+    dSave = dist[0][idist]
+    tSave = tshift[idist] # in seconds
     # Eliminate bad entries, but skip first since that 0 value should be there
     dSave[ind] = np.nan
     tSave[ind] = np.nan
     tSave[1:] = np.diff(tSave)
     tSave[0] = 0
-    # pdb.set_trace()
     return dSave, tSave/(3600.*24) # tSave in days
 
 

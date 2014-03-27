@@ -12,6 +12,18 @@ from glob import glob
 import tracpy
 import os
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+mpl.rcParams.update({'font.size': 16})
+mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
+mpl.rcParams['mathtext.fontset'] = 'custom'
+mpl.rcParams['mathtext.cal'] = 'cursive'
+mpl.rcParams['mathtext.rm'] = 'sans'
+mpl.rcParams['mathtext.tt'] = 'monospace'
+mpl.rcParams['mathtext.it'] = 'sans:italic'
+mpl.rcParams['mathtext.bf'] = 'sans:bold'
+mpl.rcParams['mathtext.sf'] = 'sans'
+mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 def get_dist(lon1, lons, lat1, lats): 
     '''
@@ -76,151 +88,130 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
 
     # pdb.set_trace()
 
+    # times at the relevant distances
+    #tSave = tp[idist] # in datetime representation
+    from datetime import datetime
+    units = 'seconds since 1970-01-01'
+    t0 = netCDF.date2num(datetime(2009,10,1,0,0), units)
+    tshift = (tp-t0)
+    # dt = tshift[1] - tshift[0]
+    dthigh = 40.
+    tshifthigh = np.arange(tshift[0], tshift[-1], dthigh)
+
+    # Interpolate based on the time since it does increase monotonically
+    disthigh = np.interp(tshifthigh[1:], tshift, dist[0])
+
     #r0 = dist[:,0]
     #Rs = np.asarray([r0*alpha**i for i in np.arange(20)]) # in km
     # # The distances right after passing Rs values
     # dist[0,(dist>=Rs).argmax(axis=1)]
     # Indices of where in dist the first entries are that are
     # just bigger than the Rs
-    idist = (dist>=Rs).argmax(axis=1)
+    idist = (disthigh>=Rs).argmax(axis=1)
     # Indices of entries that don't count
     ind = find(idist==0)
     indtemp = ind!=0
     ind = ind[indtemp] # don't want to skip first zero if it is there
     # distances at the relevant distances (including ones we don't want at the end)
-    dSave = dist[0,idist]
-    # times at the relevant distances
-    #tSave = tp[idist] # in datetime representation
-    from datetime import datetime
-    units = 'seconds since 1970-01-01'
-    t0 = netCDF.date2num(datetime(2009,10,1,0,0), units)
-    tSave = (tp-t0)[idist] # in seconds
+    dSave = disthigh[idist]
+    tSave = tshifthigh[idist] # in seconds
     # Eliminate bad entries, but skip first since that 0 value should be there
     dSave[ind] = np.nan
     tSave[ind] = np.nan
-    pdb.set_trace()
+    tSave[1:] = np.diff(tSave)
+    tSave[0] = 0
+    # pdb.set_trace()
     return dSave, tSave/(3600.*24) # tSave in days
 
-    # ntrac = dist.shape[0]
-    # nt = dist.shape[1]
-
-    # # Find first time dist>delta and dist>delta*alpha for each delta to
-    # # then linearly interpolate to find the corresponding time
-    # tau = np.zeros(Rs.size)
-    # nnans = np.zeros(Rs.size) # not nans
-
-    # for i, R in enumerate(Rs[:-1]):
-
-    #     # indices of the first time the info changes from lower than R to higher
-    #     ind1 = np.diff((dist<=R).astype(int), axis=1).argmin(axis=1)
-
-    #     # These contain the indices in dist and tp of the elements below and above R
-    #     distUse = np.vstack((dist[np.arange(0,ntrac),ind1], dist[np.arange(0,ntrac),ind1+1])).T
-    #     tp2d = tp[np.newaxis,:].repeat(ntrac, axis=0)
-    #     tpUse = np.vstack((tp2d[np.arange(0,ntrac),ind1], tp2d[np.arange(0,ntrac),ind1+1])).T
-
-
-    #     # Replace incorrect cases (when zero was chosen by default) with nan's
-    #     # bad cases: had defaulted to zero, or picked out last index
-    #     # or: picked out last index before nans
-    #     # or if dist that is greater than R accidentally got picked out
-    #     nanind = (distUse[:,1]<distUse[:,0]) \
-    #                 + (ind1==nt-1) \
-    #                 + (np.isnan(dist[np.arange(0,ntrac),ind1+1])) \
-    #                 + (dist[np.arange(0,ntrac),ind1]>R)
-    #     distUse[nanind,:] = np.nan
-    #     tpUse[nanind,:] = np.nan
-
-    #     # Do linear interpolation by hand because interp won't take in arrays
-    #     rp = (R-distUse[:,0])/(distUse[:,1] - distUse[:,0]) # weighting for higher side
-    #     rm = 1 - rp # weighting for lower side
-
-    #     # now find the interpolation time for each drifter
-    #     time1 = rm*tpUse[:,0] + rp*tpUse[:,1]
-
-    #     ## for delta*alpha ##
-
-    #     # indices of the first time the info changes from lower than R to higher
-    #     indtemp = np.diff((dist<=Rs[i+1]).astype(int), axis=1)
-    #     ibad = np.sum(indtemp==-1, axis=1)==0 # when indtemp doesnt change sign, values never below Rs[i+1]
-    #     ind2 = indtemp.argmin(axis=1)
-    #     ind2[ibad] = -1 # need to use an integer since int array
-    #     # pdb.set_trace()
-    #     while np.sum(ind2[~ibad]<ind1[~ibad])>0: # don't count the -1's
-    #         iskip = ind2<ind1
-    #         # indtemp = np.diff((dist<=Rs[i+1]).astype(int), axis=1)
-    #         indtemp[iskip,ind2[iskip]] = 0
-    #         ibad = np.sum(indtemp==-1, axis=1)==0 # when indtemp doesnt change sign, values never below Rs[i+1]
-    #         ind2 = indtemp.argmin(axis=1)
-    #         ind2[ibad] = -1 # need to use an integer since int array
-
-    #     # These contain the indices in dist and tp of the elements below and above R
-    #     distUse = np.vstack((dist[np.arange(0,ntrac),ind2], dist[np.arange(0,ntrac),ind2+1])).T
-    #     tpUse = np.vstack((tp2d[np.arange(0,ntrac),ind2], tp2d[np.arange(0,ntrac),ind2+1])).T
-
-
-    #     # Replace incorrect cases (when zero was chosen by default) with nan's
-    #     # bad cases: had defaulted to zero, or picked out last index
-    #     # also eliminating when I have already identified drifters that do not go below Rs[i+1]
-    #     nanind = (distUse[:,1]<distUse[:,0]) + (ind2==-1)
-    #     distUse[nanind,:] = np.nan
-    #     tpUse[nanind,:] = np.nan
-
-    #     # Do linear interpolation by hand because interp won't take in arrays
-    #     rp = (Rs[i+1]-distUse[:,0])/(distUse[:,1] - distUse[:,0]) # weighting for higher side
-    #     rm = 1 - rp # weighting for lower side
-
-    #     # now find the interpolation time for each drifter
-    #     time2 = rm*tpUse[:,0] + rp*tpUse[:,1]
-
-    #     dt = time2 - time1 # in seconds
-    #     dt /= 3600.*24 # in days
-
-    #     nanind = np.isnan(dt)
-    #     tau[i] = dt[~nanind].sum()
-    #     nnans[i] = (~nanind).sum()
-
-    # return tau, nnans, Rs
 
 def plot():
 
     alpha = np.sqrt(2)
+    Rs = np.asarray([np.array([0.7])*alpha**i for i in np.arange(20)])
+
+    fig = plt.figure(figsize=(9,7))
+    ax = fig.add_subplot(111)
 
     # ----- all the lines ----- #
 
-    # iWTX - 2007 - 02
+    # doturb=2, ah=5
+    tSave = np.zeros(20)
+    dSave = np.zeros(20)
+    nnans = np.zeros(20)
     Files = glob('tracks/doturb2_ah5/*fsle.npz')
-    fsle = np.zeros(20); nnans = np.zeros(20)
     for File in Files:
-        # sum all values for this combination
         d = np.load(File)
-        fsle += d['fsle']
+        dSave += d['dSave']
+        tSave += d['tSave']
         nnans += d['nnans']
-        Rs = d['Rs']
-        d.close()
-    # average values for this combination
-    # pdb.set_trace()
-    l = np.log(alpha)/(fsle/nnans)
+    d.close()
+    l = 1/((tSave/nnans))
+    ax.loglog(Rs, l, '-', lw=4, color='0.1', ms=10)
 
-    ## ----- Make the plot ----- ##
-    lcx = np.array([0.706, 1.009,1.447,1.996,2.822,4.013,5.668,7.964,11.373,16.228,22.713,31.856,45.782,63.837,91.029,127.415,180.191,256.303,362.240,509.652,727.706,])
-    lcy = np.array([1.020,1.025,0.766,0.883,0.614,0.526,0.517,0.484,0.415,0.330,0.277,0.225,0.175,0.136,0.105,0.084,0.067,0.057,0.044,0.034,0.030])
+    # doturb=1, ah=20
+    tSave = np.zeros(20)
+    dSave = np.zeros(20)
+    nnans = np.zeros(20)
+    Files = glob('tracks/doturb1_ah20/*fsle.npz')
+    for File in Files:
+        d = np.load(File)
+        dSave += d['dSave']
+        tSave += d['tSave']
+        nnans += d['nnans']
+    d.close()
+    l = 1/((tSave/nnans))
+    ax.loglog(Rs, l, '-.', lw=4, color='0.4', ms=10)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.loglog(Rs, l, '*', color='darkcyan')
-    ax.loglog(Rs[13:], 10*Rs[13:]**(-2/3), 'r')
-    ax.loglog(lcx, lcy, 'rs')
-    # ax1 = fig.add_subplot(2,1,1)
-    # ax1.loglog(Rs, l200702W, '*', color='darkcyan', alpha=0.5)
-    # ax1.loglog(Rs, l200706W, 'o', color='darkorange', alpha=0.5)
-    # ax1.loglog(Rs, l200802W, 's', color='yellow', alpha=0.5)
-    # ax1.loglog(Rs, l200806W, '^', color='purple', alpha=0.5)
-    # ax2 = fig.add_subplot(2,1,2)
-    # ax2.loglog(Rs, l200702E, '*', color='darkcyan', alpha=0.5)
-    # ax2.loglog(Rs, l200706E, 'o', color='darkorange', alpha=0.5)
-    # ax2.loglog(Rs, l200802E, 's', color='yellow', alpha=0.5)
-    # ax2.loglog(Rs, l200806E, '^', color='purple', alpha=0.5)
+    # doturb=0, ah=0 -- no interpolation
+    tSave = np.zeros(20)
+    dSave = np.zeros(20)
+    nnans = np.zeros(20)
+    Files = glob('tracks/doturb0_ah0/fsle_nointerp/*fsle.npz')
+    for File in Files:
+        d = np.load(File)
+        dSave += d['dSave']
+        tSave += d['tSave']
+        nnans += d['nnans']
+    d.close()
+    l = 1/((tSave/nnans))
+    ax.loglog(Rs, l, ':', lw=4, color='0.6', ms=10)
+
+    ## interpolation makes no difference 
+    ## doturb=0, ah=0 -- with interpolation
+    #tSave = np.zeros(20)
+    #dSave = np.zeros(20)
+    #nnans = np.zeros(20)
+    #Files = glob('tracks/doturb0_ah0/*fsle.npz')
+    ## Files = glob('tracks/doturb0_ah0/fsle_interp/*fsle.npz')
+    #for File in Files:
+    #    d = np.load(File)
+    #    dSave += d['dSave']
+    #    tSave += d['tSave']
+    #    nnans += d['nnans']
+    #d.close()
+    #l = 1/((tSave/nnans))
+    #ax.loglog(Rs, l, 'o', color='0.8', ms=10)
+
+    # theory
+    ax.loglog(Rs[-11:-4], 1*(Rs[-11:-4])**(-2/3.), 'r', lw=3, alpha=0.6)
+    ax.loglog(Rs[-11:-4], 2*(Rs[-11:-4])**(-2/7.), 'r', lw=3, alpha=0.6)
+
+    # data
+    lacasce = np.loadtxt('LaCasce2008_fsle.txt')
+    ax.loglog(lacasce[:,0], lacasce[:,1], 'r*', ms=14)
+
+    # legend and labels
+    ax.text(0.5, 0.3, r'$D^{-2/3}$', color='r', transform=ax.transAxes)
+    ax.text(0.5, 0.7, r'$D^{-2/7}$', color='r', transform=ax.transAxes)
+    ax.set_xlabel('Separation Distance [km]')
+    ax.set_ylabel(r'$\lambda$')
+    ax.text(0.05, 0.3, 'Data', color='r', transform=ax.transAxes)
+    ax.text(0.05, 0.25, 'Functions', color='r', transform=ax.transAxes, alpha=0.6)
+    ax.text(0.05, 0.2, r'doturb=2, $A_H=5$ (-)', color='0.1', transform=ax.transAxes)
+    ax.text(0.05, 0.15, r'doturb=1, $A_H=20$ (-.)', color='0.4', transform=ax.transAxes)
+    ax.text(0.05, 0.1, r'doturb=0, $A_H=0$ (:)', color='0.6', transform=ax.transAxes)
+    fig.savefig('figures/fsle_comp.pdf', bbox_inches='tight')
+
 
 
 def run():
@@ -231,8 +222,9 @@ def run():
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc)
 
-    Files = glob('tracks/doturb2_ah5/*.nc')
-    # fname = 'calcs/2007-02_WTXfsle.npz'
+    Files = glob('tracks/doturb0_ah0/*.nc')
+    # Files = glob('tracks/doturb1_ah20/*.nc')
+    # Files = glob('tracks/doturb2_ah5/*.nc')
 
     for File in Files:
 
@@ -285,7 +277,7 @@ def run():
 
             dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
                                         lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
-            ind = ~np.isnan(dSavetemp)
+            ind = ~np.isnan(tSavetemp)
             dSave[ind] += dSavetemp[ind]
     	    tSave[ind] += tSavetemp[ind]
             nnans[ind] += 1

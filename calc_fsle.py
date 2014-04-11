@@ -78,8 +78,6 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
                                      d.variables['lonp'][:], d.variables['latp'][:], d.variables['tp'][:],
                                      squared=True)
     '''
-
-    pdb.set_trace()
  
     dist = get_dist(lonpc, lonp, latpc, latp) # in km
     dist = dist[np.newaxis,:]
@@ -98,11 +96,20 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     # dist[0,(dist>=Rs).argmax(axis=1)]
     # Indices of where in dist the first entries are that are
     # just bigger than the Rs
-    idist = (dist>=Rs).argmax(axis=1)
+    idist = (dist.repeat(Rs.size, axis=0).T>=Rs.T).argmax(axis=0)
+    # idist = (dist>=Rs).argmax(axis=1)
+
+    pdb.set_trace()
+
     # Indices of entries that don't count
-    ind = find(idist==0)
-    indtemp = ind!=0
-    ind = ind[indtemp] # don't want to skip first zero if it is there
+    ind = idist==0
+    # ind = find(idist==0)
+
+    # ## STILL DEAL WITH THIS
+    # indtemp = ind!=0
+    # ind = ind[indtemp] # don't want to skip first zero if it is there
+    # ## STILL DEAL WITH THIS
+
     # distances at the relevant distances (including ones we don't want at the end)
     dSave = dist[0][idist]
     tSave = tshift[idist] # in seconds
@@ -210,7 +217,7 @@ def run():
     '''
 
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    grid = tracpy.inout.readgrid(loc)
+    grid = tracpy.inout.readgrid(loc, usebasemap=False)
 
     Files = glob('tracks/doturb0_ah0/*.nc')
     # Files = glob('tracks/doturb1_ah20/*.nc')
@@ -261,27 +268,27 @@ def run():
         # then average at the end
 
         dSave = np.zeros(20)
-    	tSave = np.zeros(20)
+        tSave = np.zeros(20)
         nnans = np.zeros(20) # to collect number of non-nans over all drifters for a time
         # for ipair in xrange(len(pairs)):
 
         ndrifters = lonp.shape[0]
 
         # loop over every possible drifter pair
-        for idrifter1 in xrange(ndrifters):
+        for idrifter in xrange(ndrifters):
 
-            for idrifter2 in np.arange(idrifter1+1, ndrifters):
+            # for idrifter2 in np.arange(idrifter1+1, ndrifters):
 
-                dSavetemp, tSavetemp = calc_fsle(lonp[idrifter1,:], latp[idrifter1,:], 
-                                            lonp[idrifter2,:], latp[idrifter2,:], tp)
-                # dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
-                #                             lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
-                ind = ~np.isnan(tSavetemp)
-                dSave[ind] += dSavetemp[ind]
-        	    tSave[ind] += tSavetemp[ind]
-                nnans[ind] += 1
-                # fsle += fsletemp
-                # nnans += nnanstemp
+            dSavetemp, tSavetemp = calc_fsle(lonp[idrifter,:], latp[idrifter,:], 
+                                        lonp[idrifter+1:,:], latp[idrifter+1:,:], tp)
+            # dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
+            #                             lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
+            ind = ~np.isnan(tSavetemp)
+            dSave[ind] += dSavetemp[ind]
+            tSave[ind] += tSavetemp[ind]
+            nnans[ind] += 1
+            # fsle += fsletemp
+            # nnans += nnanstemp
 
         # Save fsle for each file/area combination, NOT averaged
         np.savez(fname, dSave=dSave, tSave=tSave, nnans=nnans)

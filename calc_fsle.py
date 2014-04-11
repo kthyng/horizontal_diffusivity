@@ -78,6 +78,8 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
                                      d.variables['lonp'][:], d.variables['latp'][:], d.variables['tp'][:],
                                      squared=True)
     '''
+
+    pdb.set_trace()
  
     dist = get_dist(lonpc, lonp, latpc, latp) # in km
     dist = dist[np.newaxis,:]
@@ -227,30 +229,30 @@ def run():
         tp = d.variables['tp'][:]
         d.close()
 
-        # let the index in axis 0 be the drifter id
-        ID = np.arange(lonp.shape[0])
+        # # let the index in axis 0 be the drifter id
+        # ID = np.arange(lonp.shape[0])
 
-        # save pairs to save time since they are always the same
-        if not os.path.exists('tracks/pairs.npz'):
+        # # save pairs to save time since they are always the same
+        # if not os.path.exists('tracks/pairs.npz'):
 
-            dist = np.zeros((lonp.shape[0],lonp.shape[0]))
-            for idrifter in xrange(lonp.shape[0]):
-                # dist contains all of the distances from other drifters for each drifter
-                dist[idrifter,:] = get_dist(lonp[idrifter,0], lonp[:,0], latp[idrifter,0], latp[:,0])
-            pairs = []
-            for idrifter in xrange(lonp.shape[0]):
-                ind = find(dist[idrifter,:]<=1)
-                for i in ind:
-                    if ID[idrifter] != ID[i]:
-                        pairs.append([min(ID[idrifter], ID[i]), 
-                                        max(ID[idrifter], ID[i])])
+        #     dist = np.zeros((lonp.shape[0],lonp.shape[0]))
+        #     for idrifter in xrange(lonp.shape[0]):
+        #         # dist contains all of the distances from other drifters for each drifter
+        #         dist[idrifter,:] = get_dist(lonp[idrifter,0], lonp[:,0], latp[idrifter,0], latp[:,0])
+        #     pairs = []
+        #     for idrifter in xrange(lonp.shape[0]):
+        #         ind = find(dist[idrifter,:]<=1)
+        #         for i in ind:
+        #             if ID[idrifter] != ID[i]:
+        #                 pairs.append([min(ID[idrifter], ID[i]), 
+        #                                 max(ID[idrifter], ID[i])])
 
-            pairs_set = set(map(tuple,pairs))
-            pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
-            pairs.sort() #unnecessary but handy for checking work
-            np.savez('tracks/pairs.npz', pairs=pairs)
-        else:
-            pairs = np.load('tracks/pairs.npz')['pairs']
+        #     pairs_set = set(map(tuple,pairs))
+        #     pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
+        #     pairs.sort() #unnecessary but handy for checking work
+        #     np.savez('tracks/pairs.npz', pairs=pairs)
+        # else:
+        #     pairs = np.load('tracks/pairs.npz')['pairs']
 
         # pdb.set_trace()
 
@@ -261,16 +263,25 @@ def run():
         dSave = np.zeros(20)
     	tSave = np.zeros(20)
         nnans = np.zeros(20) # to collect number of non-nans over all drifters for a time
-        for ipair in xrange(len(pairs)):
+        # for ipair in xrange(len(pairs)):
 
-            dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
-                                        lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
-            ind = ~np.isnan(tSavetemp)
-            dSave[ind] += dSavetemp[ind]
-    	    tSave[ind] += tSavetemp[ind]
-            nnans[ind] += 1
-            # fsle += fsletemp
-            # nnans += nnanstemp
+        ndrifters = lonp.shape[0]
+
+        # loop over every possible drifter pair
+        for idrifter1 in xrange(ndrifters):
+
+            for idrifter2 in np.arange(idrifter1+1, ndrifters):
+
+                dSavetemp, tSavetemp = calc_fsle(lonp[idrifter1,:], latp[idrifter1,:], 
+                                            lonp[idrifter2,:], latp[idrifter2,:], tp)
+                # dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
+                #                             lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
+                ind = ~np.isnan(tSavetemp)
+                dSave[ind] += dSavetemp[ind]
+        	    tSave[ind] += tSavetemp[ind]
+                nnans[ind] += 1
+                # fsle += fsletemp
+                # nnans += nnanstemp
 
         # Save fsle for each file/area combination, NOT averaged
         np.savez(fname, dSave=dSave, tSave=tSave, nnans=nnans)

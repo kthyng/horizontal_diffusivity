@@ -111,14 +111,15 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     # ## STILL DEAL WITH THIS
 
     # distances at the relevant distances (including ones we don't want at the end)
-    dSave = dist[0][idist]
+    # dSave = dist[0][idist]
     tSave = tshift[idist] # in seconds
     # Eliminate bad entries, but skip first since that 0 value should be there
-    dSave[ind] = np.nan
+    # dSave[ind] = np.nan
     tSave[ind] = np.nan
-    tSave[1:] = np.diff(tSave)
+    tSave[:,1:] = np.diff(tSave)
     tSave[0] = 0
-    return dSave, tSave/(3600.*24) # tSave in days
+    # return dSave, tSave/(3600.*24) # tSave in days
+    return tSave/(3600.*24) # tSave in days
 
 
 def plot():
@@ -133,12 +134,12 @@ def plot():
 
     # doturb=2, ah=5
     tSave = np.zeros(20)
-    dSave = np.zeros(20)
+    # dSave = np.zeros(20)
     nnans = np.zeros(20)
     Files = glob('tracks/doturb2_ah5/*fsle.npz')
     for File in Files:
         d = np.load(File)
-        dSave += d['dSave']
+        # dSave += d['dSave']
         tSave += d['tSave']
         nnans += d['nnans']
     d.close()
@@ -147,12 +148,12 @@ def plot():
 
     # doturb=1, ah=20
     tSave = np.zeros(20)
-    dSave = np.zeros(20)
+    # dSave = np.zeros(20)
     nnans = np.zeros(20)
     Files = glob('tracks/doturb1_ah20/*fsle.npz')
     for File in Files:
         d = np.load(File)
-        dSave += d['dSave']
+        # dSave += d['dSave']
         tSave += d['tSave']
         nnans += d['nnans']
     d.close()
@@ -161,12 +162,12 @@ def plot():
 
     # doturb=0, ah=0 -- no interpolation
     tSave = np.zeros(20)
-    dSave = np.zeros(20)
+    # dSave = np.zeros(20)
     nnans = np.zeros(20)
     Files = glob('tracks/doturb0_ah0/fsle_nointerp/*fsle.npz')
     for File in Files:
         d = np.load(File)
-        dSave += d['dSave']
+        # dSave += d['dSave']
         tSave += d['tSave']
         nnans += d['nnans']
     d.close()
@@ -267,7 +268,7 @@ def run():
         # Loop over pairs of drifters from this area/time period and sum the FSLE, 
         # then average at the end
 
-        dSave = np.zeros(20)
+        # dSave = np.zeros(20)
         tSave = np.zeros(20)
         nnans = np.zeros(20) # to collect number of non-nans over all drifters for a time
         # for ipair in xrange(len(pairs)):
@@ -279,19 +280,19 @@ def run():
 
             # for idrifter2 in np.arange(idrifter1+1, ndrifters):
 
-            dSavetemp, tSavetemp = calc_fsle(lonp[idrifter,:], latp[idrifter,:], 
+            tSavetemp = calc_fsle(lonp[idrifter,:], latp[idrifter,:], 
                                         lonp[idrifter+1:,:], latp[idrifter+1:,:], tp)
             # dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
             #                             lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
             ind = ~np.isnan(tSavetemp)
-            dSave[ind] += dSavetemp[ind]
+            # dSave[ind] += dSavetemp[ind]
             tSave[ind] += tSavetemp[ind]
             nnans[ind] += 1
             # fsle += fsletemp
             # nnans += nnanstemp
 
         # Save fsle for each file/area combination, NOT averaged
-        np.savez(fname, dSave=dSave, tSave=tSave, nnans=nnans)
+        np.savez(fname, tSave=tSave, nnans=nnans)
         print 'saved file', fname
 
 

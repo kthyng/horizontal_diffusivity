@@ -84,21 +84,22 @@ def calc_fsle(lonp, latp, tp, alpha=np.sqrt(2)):
     ndrifters = lonp.shape[0]
     ntime = lonp.shape[1]
 
-    dist = np.zeros((cumsum(xrange(ndrifters))[-1],ntime))
+    dist = np.empty((np.cumsum(xrange(ndrifters))[-1],ntime))
     driftercount = 0 # holds index in dist for drifters
 
     # Construct drifters into [distance x time] in dist
     for idrifter in xrange(ndrifters):
 
-        lonpc = lonp[idrifter,:]
-        latpc = latp[idrifter,:]
+        # lonpc = lonp[idrifter,:]
+        # latpc = latp[idrifter,:]
 
-        ndriftless = ndrifters-idrifter+1
+        ndriftless = ndrifters-idrifter-1
 
 # TRYING TO PUT ALL PAIRS OF DRIFTERS IN ORDER IN 1ST DIMENSION
 # WITH TIME IN SECOND IN ORDER TO GO THROUGH THE DRIFTERS MORE QUICKLY
 
-        dist[driftercount:driftercount+ndriftless,:] = get_dist(lonpc, lonp[idrifter+1:,:], latpc, latp[idrifter+1:,:]) # in km
+        dist[driftercount:driftercount+ndriftless,:] = get_dist(lonp[idrifter,:], lonp[idrifter+1:,:], 
+                                                            latp[idrifter,:], latp[idrifter+1:,:]) # in km
 
         driftercount += ndriftless
 
@@ -301,7 +302,7 @@ def run():
 
         pdb.set_trace()
         #tSave = calc_fsle(lonp, latp, lonp, latp, tp)
-        ddrifter = 2000 # how many drifter indices to include at once
+        ddrifter = 1500 # how many drifter indices to include at once
         driftercount = 0
 
         # loop over every possible drifter pair
@@ -323,6 +324,8 @@ def run():
             nnans[ind] += 1
         #    # fsle += fsletemp
         #    # nnans += nnanstemp
+
+            driftercount += ddrifter
 
         # Save fsle for each file/area combination, NOT averaged
         np.savez(fname, tSave=tSave, nnans=nnans)

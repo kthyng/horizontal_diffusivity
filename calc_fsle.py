@@ -43,7 +43,7 @@ def get_dist(lon1, lons, lat1, lats):
                                        * np.sin(0.50*(lon1-lons))**2))
     return distance
 
-def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
+def calc_fsle(lonp, latp, tp, alpha=np.sqrt(2)):
     '''
     Calculate the relative dispersion of tracks lonp, latp as directly compared with
     the tracks described by lonpc, latpc. The two sets of tracks must start in the same 
@@ -80,7 +80,28 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     '''
  
     pdb.set_trace()
-    dist = get_dist(lonpc, lonp, latpc, latp) # in km
+
+    ndrifters = lonp.shape[0]
+    ntime = lonp.shape[1]
+
+    dist = np.zeros((cumsum(xrange(ndrifters))[-1],ntime))
+    driftercount = 0 # holds index in dist for drifters
+
+    # Construct drifters into [distance x time] in dist
+    for idrifter in xrange(ndrifters):
+
+        lonpc = lonp[idrifter,:]
+        latpc = latp[idrifter,:]
+
+        ndriftless = ndrifters-idrifter+1
+
+# TRYING TO PUT ALL PAIRS OF DRIFTERS IN ORDER IN 1ST DIMENSION
+# WITH TIME IN SECOND IN ORDER TO GO THROUGH THE DRIFTERS MORE QUICKLY
+
+        dist[driftercount:driftercount+ndriftless,:] = get_dist(lonpc, lonp[idrifter+1:,:], latpc, latp[idrifter+1:,:]) # in km
+
+        driftercount += ndriftless
+
     dist = dist[np.newaxis,:]
 
     # distances increasing with factor alpha
@@ -280,14 +301,19 @@ def run():
 
         pdb.set_trace()
         #tSave = calc_fsle(lonp, latp, lonp, latp, tp)
+        ddrifter = 2000 # how many drifter indices to include at once
+        driftercount = 0
 
         # loop over every possible drifter pair
-        for idrifter in xrange(ndrifters):
-            print 'drifter ' + str(idrifter) + ' of ' + str(ndrifters)
+        # for idrifter in xrange(ndrifters):
+        #     print 'drifter ' + str(idrifter) + ' of ' + str(ndrifters)
             # for idrifter2 in np.arange(idrifter1+1, ndrifters):
-#
-            tSavetemp = calc_fsle(lonp[idrifter,:], latp[idrifter,:], 
-                                        lonp[idrifter+1:,:], latp[idrifter+1:,:], tp)
+
+        # logic for looping through more than 1 drifter at once
+        while driftercount < ndrifters:
+
+            tSavetemp = calc_fsle(lonp[driftercount:driftercount+ddrifter,:], 
+                                latp[driftercount:driftercount+ddrifter,:], tp)
             # dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
             #                             lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
             #pdb.set_trace()

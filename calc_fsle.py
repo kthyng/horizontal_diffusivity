@@ -79,6 +79,7 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
                                      squared=True)
     '''
  
+    pdb.set_trace()
     dist = get_dist(lonpc, lonp, latpc, latp) # in km
     dist = dist[np.newaxis,:]
 
@@ -99,7 +100,7 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     idist = (dist.repeat(Rs.size, axis=0).T>=Rs.T).argmax(axis=0)
     # idist = (dist>=Rs).argmax(axis=1)
 
-    pdb.set_trace()
+    #pdb.set_trace()
 
     # ## STILL DEAL WITH THIS
     # indtemp = ind!=0
@@ -271,28 +272,31 @@ def run():
         # Loop over pairs of drifters from this area/time period and sum the FSLE, 
         # then average at the end
 
+        ndrifters = lonp.shape[0]
         # dSave = np.zeros(20)
-        tSave = np.zeros(20)
-        nnans = np.zeros(20) # to collect number of non-nans over all drifters for a time
+        tSave = np.zeros((ndrifters,20))
+        nnans = np.zeros((ndrifters,20)) # to collect number of non-nans over all drifters for a time
         # for ipair in xrange(len(pairs)):
 
-        ndrifters = lonp.shape[0]
+        pdb.set_trace()
+        #tSave = calc_fsle(lonp, latp, lonp, latp, tp)
 
         # loop over every possible drifter pair
         for idrifter in xrange(ndrifters):
-
+            print 'drifter ' + str(idrifter) + ' of ' + str(ndrifters)
             # for idrifter2 in np.arange(idrifter1+1, ndrifters):
-
+#
             tSavetemp = calc_fsle(lonp[idrifter,:], latp[idrifter,:], 
                                         lonp[idrifter+1:,:], latp[idrifter+1:,:], tp)
             # dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
             #                             lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
+            #pdb.set_trace()
             ind = ~np.isnan(tSavetemp)
             # dSave[ind] += dSavetemp[ind]
             tSave[ind] += tSavetemp[ind]
             nnans[ind] += 1
-            # fsle += fsletemp
-            # nnans += nnanstemp
+        #    # fsle += fsletemp
+        #    # nnans += nnanstemp
 
         # Save fsle for each file/area combination, NOT averaged
         np.savez(fname, tSave=tSave, nnans=nnans)

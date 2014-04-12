@@ -101,10 +101,6 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
 
     pdb.set_trace()
 
-    # Indices of entries that don't count
-    ind = idist==0
-    # ind = find(idist==0)
-
     # ## STILL DEAL WITH THIS
     # indtemp = ind!=0
     # ind = ind[indtemp] # don't want to skip first zero if it is there
@@ -113,11 +109,18 @@ def calc_fsle(lonpc, latpc, lonp, latp, tp, alpha=np.sqrt(2)):
     # distances at the relevant distances (including ones we don't want at the end)
     # dSave = dist[0][idist]
     tSave = tshift[idist] # in seconds
+    tSave[:,1:] = abs(np.diff(tSave, axis=1))
+    tSave[:,0] = 0
+
+    # Indices of entries that don't count
+    ind = tSave==0
+    # ind = find(idist==0)
+
     # Eliminate bad entries, but skip first since that 0 value should be there
     # dSave[ind] = np.nan
     tSave[ind] = np.nan
-    tSave[:,1:] = np.diff(tSave)
-    tSave[0] = 0
+    # tSave[:,1:] = np.diff(tSave)
+    # tSave[:,0] = 0
     # return dSave, tSave/(3600.*24) # tSave in days
     return tSave/(3600.*24) # tSave in days
 

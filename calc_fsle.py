@@ -248,7 +248,9 @@ def run():
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=False)
 
-    Files = glob('tracks/doturb0_ah0/*.nc')
+    Files = ['tracks/doturb0_ah0/2009-10-08T00.nc',
+               'tracks/doturb0_ah0/2009-10-15T00.nc']
+    # Files = glob('tracks/doturb0_ah0/*.nc')
     # Files = glob('tracks/doturb1_ah20/*.nc')
     # Files = glob('tracks/doturb2_ah5/*.nc')
 
@@ -265,33 +267,6 @@ def run():
         tp = d.variables['tp'][:]
         d.close()
 
-        # # let the index in axis 0 be the drifter id
-        # ID = np.arange(lonp.shape[0])
-
-        # # save pairs to save time since they are always the same
-        # if not os.path.exists('tracks/pairs.npz'):
-
-        #     dist = np.zeros((lonp.shape[0],lonp.shape[0]))
-        #     for idrifter in xrange(lonp.shape[0]):
-        #         # dist contains all of the distances from other drifters for each drifter
-        #         dist[idrifter,:] = get_dist(lonp[idrifter,0], lonp[:,0], latp[idrifter,0], latp[:,0])
-        #     pairs = []
-        #     for idrifter in xrange(lonp.shape[0]):
-        #         ind = find(dist[idrifter,:]<=1)
-        #         for i in ind:
-        #             if ID[idrifter] != ID[i]:
-        #                 pairs.append([min(ID[idrifter], ID[i]), 
-        #                                 max(ID[idrifter], ID[i])])
-
-        #     pairs_set = set(map(tuple,pairs))
-        #     pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
-        #     pairs.sort() #unnecessary but handy for checking work
-        #     np.savez('tracks/pairs.npz', pairs=pairs)
-        # else:
-        #     pairs = np.load('tracks/pairs.npz')['pairs']
-
-        # pdb.set_trace()
-
 
         # Loop over pairs of drifters from this area/time period and sum the FSLE, 
         # then average at the end
@@ -300,35 +275,18 @@ def run():
         # dSave = np.zeros(20)
         tSave = np.zeros((1,20))
         nnans = np.zeros((1,20)) # to collect number of non-nans over all drifters for a time
-        # for ipair in xrange(len(pairs)):
-
-        #pdb.set_trace()
-        #tSave = calc_fsle(lonp, latp, lonp, latp, tp)
         ddrifter = 500 # how many drifter indices to include at once
         driftercount = 0
-
-        # loop over every possible drifter pair
-        # for idrifter in xrange(ndrifters):
-        #     print 'drifter ' + str(idrifter) + ' of ' + str(ndrifters)
-            # for idrifter2 in np.arange(idrifter1+1, ndrifters):
 
         # logic for looping through more than 1 drifter at once
         while driftercount < ndrifters:
             print 'drifter ' + str(driftercount) + ' of ' + str(ndrifters)
             tSavetemp = calc_fsle(lonp[driftercount:driftercount+ddrifter,:], 
                                 latp[driftercount:driftercount+ddrifter,:], tp)
-            # dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
-            #                             lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
-            #pdb.set_trace()
+           #pdb.set_trace()
             ind = ~np.isnan(tSavetemp)
             tSave += np.nansum(tSavetemp, axis=0)
             nnans += ind.sum(axis=0)
-            # dSave[ind] += dSavetemp[ind]
-            #tSave += tSavetemp[ind].sum(axis=0)
-            #nnans += ind.sum(axis=0)
-        #    # fsle += fsletemp
-        #    # nnans += nnanstemp
-
             driftercount += ddrifter
 
         # Save fsle for each file/area combination, NOT averaged

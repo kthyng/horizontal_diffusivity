@@ -79,7 +79,7 @@ def calc_fsle(lonp, latp, tp, alpha=np.sqrt(2)):
                                      squared=True)
     '''
  
-    pdb.set_trace()
+    #pdb.set_trace()
 
     ndrifters = lonp.shape[0]
     ntime = lonp.shape[1]
@@ -114,6 +114,8 @@ def calc_fsle(lonp, latp, tp, alpha=np.sqrt(2)):
     units = 'seconds since 1970-01-01'
     t0 = netCDF.date2num(datetime(2009,10,1,0,0), units)
     tshift = (tp-t0)
+
+    #pdb.set_trace()
 
     # # The distances right after passing Rs values
     # dist[0,(dist>=Rs).argmax(axis=1)]
@@ -296,13 +298,13 @@ def run():
 
         ndrifters = lonp.shape[0]
         # dSave = np.zeros(20)
-        tSave = np.zeros((ndrifters,20))
-        nnans = np.zeros((ndrifters,20)) # to collect number of non-nans over all drifters for a time
+        tSave = np.zeros((1,20))
+        nnans = np.zeros((1,20)) # to collect number of non-nans over all drifters for a time
         # for ipair in xrange(len(pairs)):
 
-        pdb.set_trace()
+        #pdb.set_trace()
         #tSave = calc_fsle(lonp, latp, lonp, latp, tp)
-        ddrifter = 1500 # how many drifter indices to include at once
+        ddrifter = 500 # how many drifter indices to include at once
         driftercount = 0
 
         # loop over every possible drifter pair
@@ -312,16 +314,18 @@ def run():
 
         # logic for looping through more than 1 drifter at once
         while driftercount < ndrifters:
-
+            print 'drifter ' + str(driftercount) + ' of ' + str(ndrifters)
             tSavetemp = calc_fsle(lonp[driftercount:driftercount+ddrifter,:], 
                                 latp[driftercount:driftercount+ddrifter,:], tp)
             # dSavetemp, tSavetemp = calc_fsle(lonp[pairs[ipair][0],:], latp[pairs[ipair][0],:], 
             #                             lonp[pairs[ipair][1],:], latp[pairs[ipair][1],:], tp)
             #pdb.set_trace()
             ind = ~np.isnan(tSavetemp)
+            tSave += np.nansum(tSavetemp, axis=0)
+            nnans += ind.sum(axis=0)
             # dSave[ind] += dSavetemp[ind]
-            tSave[ind] += tSavetemp[ind]
-            nnans[ind] += 1
+            #tSave += tSavetemp[ind].sum(axis=0)
+            #nnans += ind.sum(axis=0)
         #    # fsle += fsletemp
         #    # nnans += nnanstemp
 

@@ -248,9 +248,9 @@ def run():
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=False)
 
-    Files = ['tracks/doturb0_ah0/2009-10-08T00.nc',
-               'tracks/doturb0_ah0/2009-10-15T00.nc']
-    # Files = glob('tracks/doturb0_ah0/*.nc')
+    #Files = ['tracks/doturb0_ah0/2009-12-22T00.nc',
+    #           'tracks/doturb0_ah0/2010-01-01T00.nc']
+    Files = glob('tracks/doturb0_ah0/*.nc')
     # Files = glob('tracks/doturb1_ah20/*.nc')
     # Files = glob('tracks/doturb2_ah5/*.nc')
 
@@ -258,8 +258,8 @@ def run():
 
         fname = File[:-3] + 'fsle.npz'
 
-        # if os.path.exists(fname): # don't redo if already done
-        #     continue
+        if os.path.exists(fname): # don't redo if already done
+             continue
 
         d = netCDF.Dataset(File)
         lonp = d.variables['lonp'][:]

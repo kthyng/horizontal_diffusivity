@@ -95,9 +95,9 @@ def calc_fsle(lonp, latp, tp, alpha=np.sqrt(2)):
 
         ndriftless = ndrifters-idrifter-1
 
-# TRYING TO PUT ALL PAIRS OF DRIFTERS IN ORDER IN 1ST DIMENSION
-# WITH TIME IN SECOND IN ORDER TO GO THROUGH THE DRIFTERS MORE QUICKLY
-
+        # Putting distances of pairs of drifter in order in 1st dimension of dist
+        # with time in second dimension in order to go more quickly. Memory is limiting
+        # factor here.
         dist[driftercount:driftercount+ndriftless,:] = get_dist(lonp[idrifter,:], lonp[idrifter+1:,:], 
                                                             latp[idrifter,:], latp[idrifter+1:,:]) # in km
 
@@ -115,21 +115,12 @@ def calc_fsle(lonp, latp, tp, alpha=np.sqrt(2)):
     t0 = netCDF.date2num(datetime(2009,10,1,0,0), units)
     tshift = (tp-t0)
 
-    #pdb.set_trace()
-
     # # The distances right after passing Rs values
     # dist[0,(dist>=Rs).argmax(axis=1)]
     # Indices of where in dist the first entries are that are
     # just bigger than the Rs
     idist = (dist.repeat(Rs.size, axis=0).T>=Rs.T).argmax(axis=0)
     # idist = (dist>=Rs).argmax(axis=1)
-
-    #pdb.set_trace()
-
-    # ## STILL DEAL WITH THIS
-    # indtemp = ind!=0
-    # ind = ind[indtemp] # don't want to skip first zero if it is there
-    # ## STILL DEAL WITH THIS
 
     # distances at the relevant distances (including ones we don't want at the end)
     # dSave = dist[0][idist]
@@ -139,14 +130,9 @@ def calc_fsle(lonp, latp, tp, alpha=np.sqrt(2)):
 
     # Indices of entries that don't count
     ind = tSave==0
-    # ind = find(idist==0)
 
     # Eliminate bad entries, but skip first since that 0 value should be there
-    # dSave[ind] = np.nan
     tSave[ind] = np.nan
-    # tSave[:,1:] = np.diff(tSave)
-    # tSave[:,0] = 0
-    # return dSave, tSave/(3600.*24) # tSave in days
     return tSave/(3600.*24) # tSave in days
 
 
@@ -202,12 +188,25 @@ def plot():
     l = 1/((tSave/nnans))
     ax.loglog(Rs, l, ':', lw=4, color='0.6', ms=10)
 
+    # doturb=0, ah=0 -- with all pairs not just close ones
+    tSave = np.zeros(20)
+    nnans = np.zeros(20)
+    Files = glob('tracks/doturb0_ah0/fsle_allpairs_nointerp/*fsle.npz')
+    for File in Files:
+        d = np.load(File)
+        # dSave += d['dSave']
+        tSave += d['tSave']
+        nnans += d['nnans']
+    d.close()
+    l = 1/((tSave/nnans))
+    ax.loglog(Rs, l, '--', lw=4, color='0.6', ms=10)
+
     ## interpolation makes no difference 
     ## doturb=0, ah=0 -- with interpolation
     #tSave = np.zeros(20)
     #dSave = np.zeros(20)
     #nnans = np.zeros(20)
-    #Files = glob('tracks/doturb0_ah0/*fsle.npz')
+    #Files = glob('tracks/doturb0_ah0/fsle_interp/*fsle.npz')
     ## Files = glob('tracks/doturb0_ah0/fsle_interp/*fsle.npz')
     #for File in Files:
     #    d = np.load(File)
@@ -248,8 +247,6 @@ def run():
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=False)
 
-    #Files = ['tracks/doturb0_ah0/2009-12-22T00.nc',
-    #           'tracks/doturb0_ah0/2010-01-01T00.nc']
     Files = glob('tracks/doturb0_ah0/*.nc')
     # Files = glob('tracks/doturb1_ah20/*.nc')
     # Files = glob('tracks/doturb2_ah5/*.nc')
@@ -272,7 +269,6 @@ def run():
         # then average at the end
 
         ndrifters = lonp.shape[0]
-        # dSave = np.zeros(20)
         tSave = np.zeros((1,20))
         nnans = np.zeros((1,20)) # to collect number of non-nans over all drifters for a time
         ddrifter = 500 # how many drifter indices to include at once
@@ -283,7 +279,6 @@ def run():
             print 'drifter ' + str(driftercount) + ' of ' + str(ndrifters)
             tSavetemp = calc_fsle(lonp[driftercount:driftercount+ddrifter,:], 
                                 latp[driftercount:driftercount+ddrifter,:], tp)
-           #pdb.set_trace()
             ind = ~np.isnan(tSavetemp)
             tSave += np.nansum(tSavetemp, axis=0)
             nnans += ind.sum(axis=0)
